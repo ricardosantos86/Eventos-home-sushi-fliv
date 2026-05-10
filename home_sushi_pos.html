@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Sushi Viseu — POS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f1;
+    --surface: #ffffff;
+    --surface2: #eeece8;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.13);
+    --accent: #c41230;
+    --accent-dim: rgba(196,18,48,0.07);
+    --text: #111111;
+    --text-muted: #555;
+    --text-dim: #aaa;
+    --red: #c41230;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-bottom: 3px solid var(--accent);
+    background: #111111;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-mark {
+    height: 44px;
+    display: flex; align-items: center;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 4px 10px;
+  }
+  .logo-mark img { height: 40px; width: auto; display: block; }
+  .logo-mark .logo-fallback {
+    font-family: var(--sans);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: #ffffff;
+  }
+  .logo-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ffffff;
+  }
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 1px;
+  }
+  .header-date {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+  .server-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    margin-left: 20px;
+  }
+  .server-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: background 0.3s;
+  }
+  .server-dot.online  { background: #3cb96a; }
+  .server-dot.offline { background: var(--red); }
+
+  /* LAYOUT */
+  .main {
+    display: flex;
+    flex: 1;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* LEFT — PRODUTOS */
+  .col-produtos {
+    flex: 1;
+    padding: 24px 28px;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border2);
+  }
+
+  .product-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid transparent;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .product-row:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .product-row.active {
+    border-left-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .product-cat {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .product-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .product-price {
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  .qty-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .qty-btn {
+    width: 36px; height: 36px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s, color 0.1s;
+    line-height: 1;
+    font-family: var(--mono);
+  }
+  .qty-btn:hover { background: var(--border2); color: var(--text); }
+  .qty-num {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    min-width: 32px;
+    text-align: center;
+    color: var(--text);
+    padding: 0 4px;
+  }
+
+  /* MIDDLE — PEDIDO */
+  .col-pedido {
+    width: 300px;
+    padding: 24px 20px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--surface);
+    box-shadow: 2px 0 12px rgba(0,0,0,0.04);
+  }
+  .order-lines {
+    flex: 1;
+    min-height: 120px;
+    overflow-y: auto;
+  }
+  .order-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .order-line:last-child { border-bottom: none; }
+  .ol-name {
+    font-size: 13px;
+    color: var(--text);
+    max-width: 160px;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  .ol-qty {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 2px;
+  }
+  .ol-sub {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .empty-msg {
+    font-size: 13px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 2rem 0;
+    font-family: var(--mono);
+  }
+  .total-block {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px solid var(--accent);
+  }
+  .total-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .total-val {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+  .btn-row {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+  }
+  .btn-print {
+    flex: 1;
+    padding: 13px 8px;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: opacity 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-print:hover { opacity: 0.88; }
+  .btn-print:active { transform: scale(0.98); }
+  .btn-print:disabled {
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: not-allowed;
+    opacity: 1;
+  }
+  .btn-finalize {
+    flex: 1;
+    padding: 13px 8px;
+    background: transparent;
+    color: var(--text);
+    border: 1.5px solid var(--border2);
+    border-radius: 10px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-finalize:hover { background: var(--surface2); }
+  .btn-finalize:disabled {
+    color: var(--text-dim);
+    border-color: var(--border);
+    cursor: not-allowed;
+  }
+  /* EDITAR PEDIDO */
+  .edit-banner {
+    display: none;
+    background: #fff8e1;
+    border: 1px solid #f0c040;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #7a5c00;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .edit-banner.visible { display: flex; }
+  .edit-banner-cancel {
+    background: none; border: none;
+    color: #7a5c00; cursor: pointer;
+    font-size: 15px; line-height: 1;
+    padding: 0 2px;
+  }
+  .btn-edit {
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+    white-space: nowrap;
+  }
+  .btn-edit:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .obs-area {
+    margin-top: 14px;
+  }
+  .obs-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .obs-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    resize: none;
+    height: 64px;
+    transition: border-color 0.15s;
+  }
+  .obs-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .obs-input::placeholder { color: var(--text-dim); }
+
+  .btn-clear {
+    margin-top: 8px;
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .btn-clear:hover { border-color: var(--red); color: var(--red); background: rgba(217,54,54,0.05); }
+
+  /* RIGHT — HISTÓRICO */
+  .col-historico {
+    width: 300px;
+    padding: 24px 20px;
+    overflow-y: auto;
+    background: var(--bg);
+  }
+  .hist-empty {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 2rem 0;
+  }
+  .hist-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .hist-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: #f9f8f6;
+  }
+  .hist-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-dim);
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .hist-time {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    flex: 1;
+  }
+  .hist-total {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .hist-body {
+    padding: 12px 14px;
+  }
+  .hist-item {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 2;
+    font-family: var(--mono);
+  }
+
+  /* PRINT */
+  @media print {
+    body > * { display: none !important; }
+    #print-area { display: block !important; }
+  }
+  #print-area { display: none; }
+
+  /* MODAL */
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 28px;
+    width: 360px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+  .modal h2 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    color: var(--text);
+  }
+  .modal label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .modal select {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 20px;
+    appearance: none;
+    cursor: pointer;
+  }
+  .modal-actions { display: flex; gap: 8px; }
+  .btn-modal-save {
+    flex: 1; padding: 11px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 8px;
+    font-family: var(--sans); font-size: 13px;
+    font-weight: 700; cursor: pointer;
+  }
+  .btn-modal-cancel {
+    padding: 11px 18px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    font-family: var(--sans); font-size: 13px;
+    color: var(--text-muted); cursor: pointer;
+  }
+  .server-status { cursor: pointer; }
+  .server-status:hover .server-label { text-decoration: underline; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <img src="logo.png" alt="HOME Sushi & Asian Food"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+      <span class="logo-fallback" style="display:none;">HOME SUSHI</span>
+    </div>
+    <div style="margin-left:12px;">
+      <div class="logo-sub">Sistema de Pedidos · Viseu</div>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center;">
+    <div class="header-date" id="header-date"></div>
+    <div class="server-status" onclick="openPrinterModal()" title="Configurar impressora">
+      <div class="server-dot" id="server-dot"></div>
+      <span class="server-label" id="server-label">a ligar...</span>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- PRODUTOS -->
+  <div class="col-produtos">
+    <div class="section-label">Produtos</div>
+    <div id="products-list"></div>
+  </div>
+
+  <!-- PEDIDO ATUAL -->
+  <div class="col-pedido">
+    <div class="section-label">Pedido atual</div>
+    <div class="edit-banner" id="edit-banner">
+      <span id="edit-banner-text">A editar pedido</span>
+      <button class="edit-banner-cancel" onclick="cancelEdit()" title="Cancelar edição">✕</button>
+    </div>
+    <div id="order-lines" class="order-lines">
+      <div class="empty-msg">— vazio —</div>
+    </div>
+    <div class="obs-area">
+      <span class="obs-label">Observações</span>
+      <textarea class="obs-input" id="obs-input" placeholder="Sem glúten, alergia a amendoim..."></textarea>
+    </div>
+    <div class="total-block">
+      <div class="total-label">Total</div>
+      <div class="total-val" id="total-val">0,00 €</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-finalize" id="btn-finalize" disabled onclick="finalizeOrder()">Finalizar Pedido</button>
+      <button class="btn-print" id="btn-print" disabled onclick="printOrder()">Imprimir e Finalizar</button>
+    </div>
+    <button class="btn-clear" onclick="clearOrder()">Limpar pedido</button>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div class="col-historico">
+    <div class="section-label">Histórico</div>
+    <div id="history-list"><div class="hist-empty">sem pedidos ainda</div></div>
+  </div>
+
+</div>
+
+<div id="print-area"></div>
+
+<!-- Modal: configurar impressora -->
+<div class="modal-backdrop" id="modal-printer">
+  <div class="modal">
+    <h2>Configurar impressora</h2>
+    <label>Impressora USB</label>
+    <select id="printer-select">
+      <option value="">A carregar...</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-modal-save" onclick="savePrinter()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRODUCTS = [
+  { id: 'entrada',   cat: 'Entrada',    name: 'Ceviche',                price: 4.00 },
+  { id: 'prato',     cat: 'Prato',      name: 'Sushi e Sashimi 6 peças', price: 7.00 },
+  { id: 'sobremesa', cat: 'Sobremesa',  name: 'Chokoreto',              price: 3.00 },
+];
+
+let qty = {};
+let history = [];
+let orderCounter = 0;
+let editingNum = null; // número do pedido em edição, ou null se novo
+
+PRODUCTS.forEach(p => qty[p.id] = 0);
+
+// Atualiza data/hora no header
+function updateClock() {
+  const now = new Date();
+  document.getElementById('header-date').textContent =
+    now.toLocaleDateString('pt-PT', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }) +
+    ' · ' + now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+}
+updateClock();
+setInterval(updateClock, 60000);
+
+async function reprintOrder(index) {
+  const o = history[index];
+  if (!o) return;
+  if (!serverOnline) { alert('Servidor offline.'); return; }
+  if (!configuredPrinter) { openPrinterModal(); return; }
+
+  try {
+    const r = await fetch(SERVER + '/api/print', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        editNum: o.num,
+        date: o.date, time: o.time,
+        total: parseFloat(o.total),
+        obs: o.obs || '',
+        lines: o.lines.map(l => {
+          const p = PRODUCTS.find(p => p.name === l.name);
+          return { name: l.name, qty: l.qty, price: p ? p.price : 0 };
+        }),
+      }),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+  } catch (e) {
+    alert('Erro ao imprimir: ' + e.message);
+  }
+}
+
+function loadOrderForEdit(index) {
+  const o = history[index];
+  if (!o) return;
+
+  // Limpa pedido atual e carrega itens do histórico
+  PRODUCTS.forEach(p => qty[p.id] = 0);
+  o.lines.forEach(l => {
+    const product = PRODUCTS.find(p => p.name === l.name);
+    if (product) qty[product.id] = l.qty;
+  });
+  document.getElementById('obs-input').value = o.obs || '';
+
+  // Activa modo de edição
+  editingNum = o.num;
+  const banner = document.getElementById('edit-banner');
+  document.getElementById('edit-banner-text').textContent = `A editar pedido #${o.num}`;
+  banner.classList.add('visible');
+
+  renderProducts();
+  renderOrder();
+  // Scroll para o topo do painel
+  document.querySelector('.col-pedido').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEdit() {
+  editingNum = null;
+  document.getElementById('edit-banner').classList.remove('visible');
+  clearOrder();
+}
+
+function renderProducts() {
+  document.getElementById('products-list').innerHTML = PRODUCTS.map(p => `
+    <div class="product-row ${qty[p.id] > 0 ? 'active' : ''}" id="row-${p.id}">
+      <div style="flex:1;">
+        <div class="product-cat">${p.cat}</div>
+        <div class="product-name">${p.name}</div>
+      </div>
+      <div class="product-price">${p.price.toFixed(2).replace('.', ',')} €</div>
+      <div class="qty-ctrl">
+        <button class="qty-btn" onclick="changeQty('${p.id}', -1)">−</button>
+        <span class="qty-num" id="qty-${p.id}">${qty[p.id]}</span>
+        <button class="qty-btn" onclick="changeQty('${p.id}', 1)">+</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function changeQty(id, delta) {
+  qty[id] = Math.max(0, qty[id] + delta);
+  const numEl = document.getElementById('qty-' + id);
+  if (numEl) numEl.textContent = qty[id];
+  const rowEl = document.getElementById('row-' + id);
+  if (rowEl) rowEl.classList.toggle('active', qty[id] > 0);
+  renderOrder();
+}
+
+function renderOrder() {
+  const lines = PRODUCTS.filter(p => qty[p.id] > 0);
+  const el  = document.getElementById('order-lines');
+  const btn  = document.getElementById('btn-print');
+  const btnF = document.getElementById('btn-finalize');
+
+  if (!lines.length) {
+    el.innerHTML = '<div class="empty-msg">— vazio —</div>';
+    document.getElementById('total-val').textContent = '0,00 €';
+    btn.disabled = true;
+    btnF.disabled = true;
+    return;
+  }
+
+  let total = 0;
+  el.innerHTML = lines.map(p => {
+    const sub = p.price * qty[p.id];
+    total += sub;
+    return `
+      <div class="order-line">
+        <div>
+          <div class="ol-qty">${qty[p.id]}×</div>
+          <div class="ol-name">${p.name}</div>
+        </div>
+        <div class="ol-sub">${sub.toFixed(2).replace('.', ',')} €</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('total-val').textContent = total.toFixed(2).replace('.', ',') + ' €';
+  btn.disabled = false;
+  btn.textContent = 'Imprimir e Finalizar';
+  btnF.disabled = false;
+  btnF.textContent = 'Finalizar Pedido';
+}
+
+function buildTalao(lines, num, dateStr, timeStr, total, copia) {
+  const rows = lines.map(p => {
+    const sub = (p.price * qty[p.id]).toFixed(2).replace('.', ',');
+    const name = p.name.length > 22 ? p.name.substring(0, 22) + '.' : p.name;
+    return `<tr>
+      <td style="padding:2px 0;">${name}</td>
+      <td style="text-align:center; padding:2px 4px;">${qty[p.id]}</td>
+      <td style="text-align:right; padding:2px 0;">${sub} €</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div style="width:72mm; font-family:'Courier New', Courier, monospace; font-size:11px; padding:0 0 6mm 0;">
+      <div style="text-align:center; margin-bottom:8px;">
+        <div style="font-size:15px; font-weight:bold; letter-spacing:1px;">HOME SUSHI VISEU</div>
+        <div style="font-size:10px; margin-top:2px;">Urb. Quinta del Rei, Lote 264 · 3500-613 Viseu</div>
+        <div style="font-size:10px;">Tel: 232 396 351 | 933 330 867</div>
+        <div style="font-size:10px;">viseu@homesushi.pt · NIF: 513 977 970</div>
+      </div>
+      <div style="border-top:1px dashed #000; margin:6px 0;"></div>
+      <div style="display:flex; justify-content:space-between; font-size:10px; margin-bottom:2px;">
+        <span><b>Pedido #${num}</b></span>
+        <span>${dateStr} ${timeStr}</span>
+      </div>
+      <div style="font-size:10px; text-align:right; font-style:italic; margin-bottom:4px;">${copia}</div>
+      <div style="border-top:1px dashed #000; margin:6px 0;"></div>
+      <table style="width:100%; border-collapse:collapse; font-size:11px;">
+        <thead>
+          <tr style="font-size:10px; border-bottom:1px solid #ccc;">
+            <th style="text-align:left; font-weight:normal; padding-bottom:3px;">Item</th>
+            <th style="text-align:center; font-weight:normal;">Qtd</th>
+            <th style="text-align:right; font-weight:normal;">Sub</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="border-top:1px dashed #000; margin:6px 0;"></div>
+      <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold;">
+        <span>TOTAL</span>
+        <span>${total.toFixed(2).replace('.', ',')} €</span>
+      </div>
+      <div style="border-top:1px dashed #000; margin:6px 0;"></div>
+      <div style="text-align:center; font-size:10px; margin-top:6px;">
+        Obrigado pela sua visita!<br>
+        <span style="font-size:9px;">www.homesushi.pt</span>
+      </div>
+    </div>`;
+}
+
+const SERVER = 'http://localhost:5000';
+let serverOnline = false;
+let configuredPrinter = '';
+
+async function checkServer() {
+  try {
+    const r = await fetch(SERVER + '/health', { signal: AbortSignal.timeout(1500) });
+    if (r.ok) {
+      const d = await r.json();
+      serverOnline = true;
+      configuredPrinter = d.printer || '';
+      // sincroniza o contador com o servidor
+      if (d.counter) orderCounter = d.counter;
+    } else {
+      serverOnline = false;
+    }
+  } catch {
+    serverOnline = false;
+  }
+  const dot   = document.getElementById('server-dot');
+  const label = document.getElementById('server-label');
+  if (!serverOnline) {
+    dot.className = 'server-dot offline';
+    label.textContent = 'servidor offline';
+  } else if (!configuredPrinter) {
+    dot.className = 'server-dot offline';
+    label.textContent = '⚙ configurar impressora';
+  } else {
+    dot.className = 'server-dot online';
+    label.textContent = configuredPrinter.length > 22
+      ? configuredPrinter.substring(0, 22) + '…'
+      : configuredPrinter;
+  }
+}
+checkServer();
+setInterval(checkServer, 10000);
+
+// ── Modal impressora ────────────────────────────────────────────────────────
+async function openPrinterModal() {
+  if (!serverOnline) return;
+  document.getElementById('modal-printer').classList.add('open');
+  const sel = document.getElementById('printer-select');
+  sel.innerHTML = '<option value="">A carregar...</option>';
+  try {
+    const r = await fetch(SERVER + '/api/printers');
+    const d = await r.json();
+    sel.innerHTML = d.printers.map(p =>
+      `<option value="${p}" ${p === d.selected ? 'selected' : ''}>${p}</option>`
+    ).join('');
+    if (!d.printers.length) sel.innerHTML = '<option value="">Nenhuma impressora encontrada</option>';
+  } catch {
+    sel.innerHTML = '<option value="">Erro ao listar impressoras</option>';
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal-printer').classList.remove('open');
+}
+
+async function savePrinter() {
+  const printer = document.getElementById('printer-select').value;
+  if (!printer) return;
+  await fetch(SERVER + '/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ printer }),
+  });
+  closeModal();
+  await checkServer();
+}
+
+document.getElementById('modal-printer').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+async function finalizeOrder() {
+  const lines = PRODUCTS.filter(p => qty[p.id] > 0);
+  if (!lines.length) return;
+  if (!serverOnline) { alert('Servidor offline. Inicia o iniciar.bat primeiro.'); return; }
+
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString('pt-PT');
+  const timeStr = now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+  let total = 0;
+  lines.forEach(p => total += p.price * qty[p.id]);
+  const obs = document.getElementById('obs-input').value.trim();
+
+  const btnF = document.getElementById('btn-finalize');
+  btnF.disabled = true;
+  btnF.textContent = 'A guardar...';
+
+  try {
+    const r = await fetch(SERVER + '/api/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: dateStr, time: timeStr, total, obs,
+        editNum: editingNum,
+        lines: lines.map(p => ({ name: p.name, qty: qty[p.id], price: p.price })),
+      }),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error);
+
+    const num = data.num;
+    if (!editingNum) orderCounter = parseInt(num) + 1;
+    const entry = {
+      num, date: dateStr, time: timeStr,
+      lines: lines.map(p => ({ name: p.name, qty: qty[p.id] })),
+      total: total.toFixed(2),
+    };
+    if (editingNum) {
+      const idx = history.findIndex(o => o.num === editingNum);
+      if (idx !== -1) history[idx] = entry; else history.unshift(entry);
+    } else {
+      history.unshift(entry);
+    }
+    renderHistory();
+    clearOrder();
+  } catch (e) {
+    alert('Erro ao finalizar: ' + e.message);
+    btnF.disabled = false;
+    btnF.textContent = 'Finalizar';
+  }
+}
+
+async function printOrder() {
+  const lines = PRODUCTS.filter(p => qty[p.id] > 0);
+  if (!lines.length) return;
+
+  const btn = document.getElementById('btn-print');
+
+  if (!serverOnline) {
+    alert('Servidor offline. Inicia o iniciar.bat primeiro.');
+    return;
+  }
+  if (!configuredPrinter) {
+    openPrinterModal();
+    return;
+  }
+
+  orderCounter++;
+  let num       = String(orderCounter).padStart(4, '0');
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString('pt-PT');
+  const timeStr = now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+  let total = 0;
+  lines.forEach(p => total += p.price * qty[p.id]);
+
+  btn.disabled    = true;
+  btn.textContent = 'A imprimir...';
+
+  const obs = document.getElementById('obs-input').value.trim();
+
+  try {
+    const r = await fetch(SERVER + '/api/print', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: dateStr, time: timeStr, total, obs,
+        editNum: editingNum,  // null = novo pedido, string = edição
+        lines: lines.map(p => ({ name: p.name, qty: qty[p.id], price: p.price })),
+      }),
+    });
+    const data = await r.json();
+    if (!data.ok) {
+      if (data.error === 'NO_PRINTER') { openPrinterModal(); return; }
+      throw new Error(data.error);
+    }
+    num = data.num;
+    if (!editingNum) orderCounter = parseInt(num) + 1;
+  } catch (e) {
+    alert('Erro de impressão: ' + e.message);
+    btn.disabled    = false;
+    btn.textContent = '⬡ Imprimir talão';
+    return;
+  }
+
+  const entry = {
+    num, date: dateStr, time: timeStr,
+    lines: lines.map(p => ({ name: p.name, qty: qty[p.id] })),
+    total: total.toFixed(2),
+  };
+  if (editingNum) {
+    const idx = history.findIndex(o => o.num === editingNum);
+    if (idx !== -1) history[idx] = entry; else history.unshift(entry);
+  } else {
+    history.unshift(entry);
+  }
+  renderHistory();
+  clearOrder();
+}
+
+function clearOrder() {
+  PRODUCTS.forEach(p => qty[p.id] = 0);
+  document.getElementById('obs-input').value = '';
+  editingNum = null;
+  document.getElementById('edit-banner').classList.remove('visible');
+  renderProducts();
+  renderOrder();
+}
+
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (!history.length) {
+    el.innerHTML = '<div class="hist-empty">sem pedidos ainda</div>';
+    return;
+  }
+  el.innerHTML = history.map((o, i) => `
+    <div class="hist-card">
+      <div class="hist-header">
+        <span class="hist-num">#${o.num}</span>
+        <span class="hist-time">${o.date} ${o.time}</span>
+        <span class="hist-total">${o.total.replace('.', ',')} €</span>
+      </div>
+      <div class="hist-body">
+        ${o.lines.map(l => `<div class="hist-item">${l.qty}× ${l.name}</div>`).join('')}
+        <div style="margin-top:8px; display:flex; gap:6px;">
+          <button class="btn-edit" onclick="loadOrderForEdit(${i})">Editar</button>
+          <button class="btn-edit" onclick="reprintOrder(${i})">Imprimir</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+renderProducts();
+renderOrder();
+</script>
+</body>
+</html>
