@@ -904,7 +904,19 @@ async function checkServer() {
       : configuredPrinter;
   }
 }
-checkServer();
+async function loadHistory() {
+  try {
+    const r = await fetch(SERVER + '/api/history', { signal: AbortSignal.timeout(3000) });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (Array.isArray(d.history) && d.history.length) {
+      history = d.history.slice().reverse(); // servidor guarda por ordem crescente
+      renderHistory();
+    }
+  } catch {}
+}
+
+checkServer().then(loadHistory);
 setInterval(checkServer, 10000);
 
 // ── Modal impressora ────────────────────────────────────────────────────────
