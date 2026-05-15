@@ -349,6 +349,11 @@ def config():
     return jsonify(load_config())
 
 
+@app.route('/api/history')
+def get_history():
+    return jsonify({'history': load_history()})
+
+
 @app.route('/api/finalize', methods=['POST'])
 def finalize_order():
     global order_counter
