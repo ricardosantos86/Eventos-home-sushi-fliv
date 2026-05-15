@@ -1014,9 +1014,10 @@ async function confirmPayment() {
     pagamento.valorEntregue = valor;
     pagamento.troco = Math.max(0, valor - total);
   }
+  const action = pendingAction; // guardar antes de closePaymentModal() fazer reset
   closePaymentModal();
-  if (pendingAction === 'finalize') await doFinalize(pagamento);
-  else if (pendingAction === 'print') await doPrint(pagamento);
+  if (action === 'finalize') await doFinalize(pagamento);
+  else if (action === 'print') await doPrint(pagamento);
 }
 
 document.getElementById('modal-payment').addEventListener('click', e => {
