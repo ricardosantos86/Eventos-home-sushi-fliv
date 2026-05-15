@@ -572,31 +572,48 @@
   .hist-pay.dinheiro { background: #dcfce7; color: #15803d; }
   .hist-troco { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
-  /* SELETOR DE DATA NO HISTÓRICO */
-  .hist-date-bar {
-    margin-bottom: 12px;
-  }
-  .hist-date-input {
-    width: 100%;
-    padding: 8px 10px;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text);
-    cursor: pointer;
+  /* CALENDÁRIO DO HISTÓRICO */
+  .hist-date-bar { margin-bottom: 10px; }
+  .hist-cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 6px;
-    transition: border-color 0.15s;
   }
-  .hist-date-input:focus { outline: none; border-color: var(--accent); }
+  .hist-cal-nav-btn {
+    background: none; border: 1px solid var(--border2); border-radius: 6px;
+    cursor: pointer; font-size: 11px; color: var(--text-muted);
+    padding: 3px 8px; line-height: 1;
+    transition: background 0.1s, color 0.1s;
+  }
+  .hist-cal-nav-btn:hover { background: var(--surface2); color: var(--text); }
+  .hist-cal-month {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: var(--text); letter-spacing: 0.06em;
+  }
+  .hist-cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 2px; margin-bottom: 8px;
+  }
+  .hist-cal-dow {
+    font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+    text-align: center; padding: 2px 0;
+  }
+  .hist-cal-day {
+    font-family: var(--mono); font-size: 11px;
+    text-align: center; padding: 5px 2px;
+    border-radius: 5px; cursor: pointer; color: var(--text-muted);
+    transition: background 0.1s;
+  }
+  .hist-cal-day:hover:not(.empty) { background: var(--surface2); }
+  .hist-cal-day.empty { cursor: default; }
+  .hist-cal-day.has-orders { background: #dcfce7; color: #15803d; font-weight: 600; }
+  .hist-cal-day.has-orders:hover { background: #bbf7d0; }
+  .hist-cal-day.is-today { box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); font-weight: 600; }
+  .hist-cal-day.is-today.has-orders { color: var(--accent); }
+  .hist-cal-day.selected { background: var(--accent) !important; color: #fff !important; box-shadow: none !important; }
   .hist-day-summary {
-    display: flex;
-    justify-content: space-between;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-muted);
-    padding: 0 2px;
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-muted); padding: 0 2px;
   }
   .hist-day-summary .sum-total { font-weight: 500; color: var(--text); }
 </style>
@@ -660,7 +677,7 @@
   <div class="col-historico">
     <div class="section-label">Histórico</div>
     <div class="hist-date-bar">
-      <input class="hist-date-input" type="date" id="hist-date" onchange="renderHistory()">
+      <div id="hist-cal"></div>
       <div class="hist-day-summary" id="hist-day-summary"></div>
     </div>
     <div id="history-list"><div class="hist-empty">sem pedidos ainda</div></div>
@@ -718,6 +735,9 @@ let orderCounter = 0;
 let editingNum = null;
 let selectedPayMethod = null;
 let pendingAction = null;
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let selectedCalDate = new Date().toLocaleDateString('pt-PT');
 
 PRODUCTS.forEach(p => qty[p.id] = 0);
 
@@ -952,7 +972,7 @@ async function loadHistory() {
     console.warn('Erro ao carregar histórico:', e);
     return;
   }
-  renderHistory();
+  refreshHistoryUI();
 }
 
 checkServer().then(loadHistory);
@@ -1136,7 +1156,7 @@ async function doFinalize(pagamento) {
     } else {
       history.unshift(entry);
     }
-    renderHistory();
+    refreshHistoryUI();
     clearOrder();
   } catch (e) {
     alert('Erro ao finalizar: ' + e.message);
@@ -1215,18 +1235,74 @@ function clearOrder() {
   renderOrder();
 }
 
+// ── Calendário ───────────────────────────────────────────────────────────────
+
+function renderCalendar() {
+  const orderDates = new Set(history.map(o => o.date).filter(Boolean));
+  const todayStr   = new Date().toLocaleDateString('pt-PT');
+  const mNames     = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                      'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const firstDay   = new Date(calYear, calMonth, 1);
+  const lastDay    = new Date(calYear, calMonth + 1, 0);
+  const startDow   = (firstDay.getDay() + 6) % 7; // seg=0
+
+  const emptySlots = Array.from({ length: startDow }, () =>
+    `<div class="hist-cal-day empty"></div>`).join('');
+
+  let dayHtml = '';
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const dd      = String(day).padStart(2, '0');
+    const mm      = String(calMonth + 1).padStart(2, '0');
+    const dateStr = `${dd}/${mm}/${calYear}`;
+    const cls     = ['hist-cal-day',
+      orderDates.has(dateStr)       ? 'has-orders' : '',
+      dateStr === todayStr          ? 'is-today'   : '',
+      dateStr === selectedCalDate   ? 'selected'   : '',
+    ].filter(Boolean).join(' ');
+    dayHtml += `<div class="${cls}" onclick="selectCalDay('${dateStr}')">${day}</div>`;
+  }
+
+  document.getElementById('hist-cal').innerHTML = `
+    <div class="hist-cal-nav">
+      <button class="hist-cal-nav-btn" onclick="prevMonth()">◀</button>
+      <span class="hist-cal-month">${mNames[calMonth]} ${calYear}</span>
+      <button class="hist-cal-nav-btn" onclick="nextMonth()">▶</button>
+    </div>
+    <div class="hist-cal-grid">
+      ${'Seg Ter Qua Qui Sex Sáb Dom'.split(' ').map(d =>
+        `<div class="hist-cal-dow">${d}</div>`).join('')}
+      ${emptySlots}${dayHtml}
+    </div>`;
+}
+
+function prevMonth() {
+  if (--calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function nextMonth() {
+  if (++calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function selectCalDay(dateStr) {
+  selectedCalDate = dateStr;
+  renderCalendar();
+  renderHistory();
+}
+
+function refreshHistoryUI() {
+  renderCalendar();
+  renderHistory();
+}
+
+// ── Histórico ─────────────────────────────────────────────────────────────────
+
 function renderHistory() {
-  const el      = document.getElementById('history-list');
-  const summary = document.getElementById('hist-day-summary');
+  const el       = document.getElementById('history-list');
+  const summary  = document.getElementById('hist-day-summary');
+  const filtered = history.filter(o => o.date === selectedCalDate);
 
-  // data selecionada → converter de YYYY-MM-DD para DD/MM/YYYY
-  const raw = document.getElementById('hist-date').value;
-  const [y, m, d] = raw.split('-');
-  const filterDate = `${d}/${m}/${y}`;
-
-  const filtered = history.filter(o => o.date === filterDate);
-
-  // resumo do dia
   if (filtered.length) {
     const dayTotal = filtered.reduce((s, o) => s + parseFloat(o.total), 0);
     summary.innerHTML = `
@@ -1267,11 +1343,9 @@ function renderHistory() {
   }).join('');
 }
 
-// data de hoje no seletor
-document.getElementById('hist-date').value = new Date().toISOString().split('T')[0];
-
 renderProducts();
 renderOrder();
+renderCalendar();
 </script>
 </body>
 </html>
