@@ -571,6 +571,31 @@
   .hist-pay.mbway    { background: #dbeafe; color: #1d4ed8; }
   .hist-pay.dinheiro { background: #dcfce7; color: #15803d; }
   .hist-troco { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* AGRUPAMENTO POR DIA */
+  .hist-day { margin-bottom: 10px; }
+  .hist-day-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 6px;
+    transition: background 0.15s;
+  }
+  .hist-day-header:hover { background: #e5e3de; }
+  .hist-day-label {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: var(--text); flex: 1;
+  }
+  .hist-day-label.today { color: var(--accent); }
+  .hist-day-stats { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+  .hist-day-sum { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text); }
+  .hist-day-arrow { font-size: 9px; color: var(--text-dim); }
+  .hist-day-body { display: none; }
+  .hist-day-body.open { display: block; }
 </style>
 </head>
 <body>
@@ -1176,36 +1201,69 @@ function clearOrder() {
   renderOrder();
 }
 
+function toggleDay(id) {
+  const body  = document.getElementById('day-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  const open  = body.classList.toggle('open');
+  arrow.textContent = open ? '▲' : '▼';
+}
+
 function renderHistory() {
   const el = document.getElementById('history-list');
   if (!history.length) {
     el.innerHTML = '<div class="hist-empty">sem pedidos ainda</div>';
     return;
   }
-  el.innerHTML = history.map((o, i) => {
-    const payBadge = o.pagamento
-      ? `<span class="hist-pay ${o.pagamento.toLowerCase()}">${o.pagamento}</span>`
-      : '';
-    const trocoLine = (o.pagamento === 'DINHEIRO' && o.troco > 0)
-      ? `<div class="hist-troco">Troco: ${parseFloat(o.troco).toFixed(2).replace('.', ',')} €</div>`
-      : '';
+
+  const today = new Date().toLocaleDateString('pt-PT');
+
+  // datas únicas mantendo ordem (mais recente primeiro)
+  const seen = new Set();
+  const dates = [];
+  history.forEach(o => { if (!seen.has(o.date)) { seen.add(o.date); dates.push(o.date); } });
+
+  el.innerHTML = dates.map(date => {
+    const orders  = history.map((o, i) => ({ ...o, _i: i })).filter(o => o.date === date);
+    const isToday = date === today;
+    const dayId   = date.replace(/\//g, '-');
+    const daySum  = orders.reduce((s, o) => s + parseFloat(o.total), 0);
+
+    const cards = orders.map(o => {
+      const payBadge  = o.pagamento
+        ? `<span class="hist-pay ${o.pagamento.toLowerCase()}">${o.pagamento}</span>` : '';
+      const trocoLine = (o.pagamento === 'DINHEIRO' && o.troco > 0)
+        ? `<div class="hist-troco">Troco: ${parseFloat(o.troco).toFixed(2).replace('.', ',')} €</div>` : '';
+      return `
+        <div class="hist-card">
+          <div class="hist-header">
+            <span class="hist-num">#${o.num}</span>
+            <span class="hist-time">${o.time}</span>
+            ${payBadge}
+            <span class="hist-total">${o.total.replace('.', ',')} €</span>
+          </div>
+          <div class="hist-body">
+            ${o.lines.map(l => `<div class="hist-item">${l.qty}× ${l.name}</div>`).join('')}
+            ${trocoLine}
+            <div style="margin-top:8px; display:flex; gap:6px;">
+              <button class="btn-edit" onclick="loadOrderForEdit(${o._i})">Editar</button>
+              <button class="btn-edit" onclick="reprintOrder(${o._i})">Imprimir</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
     return `
-    <div class="hist-card">
-      <div class="hist-header">
-        <span class="hist-num">#${o.num}</span>
-        <span class="hist-time">${o.date} ${o.time}</span>
-        ${payBadge}
-        <span class="hist-total">${o.total.replace('.', ',')} €</span>
-      </div>
-      <div class="hist-body">
-        ${o.lines.map(l => `<div class="hist-item">${l.qty}× ${l.name}</div>`).join('')}
-        ${trocoLine}
-        <div style="margin-top:8px; display:flex; gap:6px;">
-          <button class="btn-edit" onclick="loadOrderForEdit(${i})">Editar</button>
-          <button class="btn-edit" onclick="reprintOrder(${i})">Imprimir</button>
+      <div class="hist-day">
+        <div class="hist-day-header" onclick="toggleDay('${dayId}')">
+          <span class="hist-day-label ${isToday ? 'today' : ''}">${isToday ? 'HOJE' : date}</span>
+          <span class="hist-day-stats">${orders.length} ped.</span>
+          <span class="hist-day-sum">${daySum.toFixed(2).replace('.', ',')} €</span>
+          <span class="hist-day-arrow" id="arrow-${dayId}">${isToday ? '▲' : '▼'}</span>
         </div>
-      </div>
-    </div>`;
+        <div class="hist-day-body ${isToday ? 'open' : ''}" id="day-${dayId}">
+          ${cards}
+        </div>
+      </div>`;
   }).join('');
 }
 
