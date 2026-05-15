@@ -574,6 +574,27 @@
 
   /* CALENDÁRIO DO HISTÓRICO */
   .hist-date-bar { margin-bottom: 10px; }
+  .hist-date-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 0;
+    transition: background 0.15s;
+  }
+  .hist-date-toggle:hover { background: #e5e3de; }
+  .hist-date-toggle-label {
+    font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text);
+  }
+  .hist-date-toggle-arrow { font-size: 9px; color: var(--text-dim); }
+  .hist-cal-panel {
+    display: none;
+    padding: 10px 0 4px;
+  }
+  .hist-cal-panel.open { display: block; }
   .hist-cal-nav {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 6px;
@@ -677,7 +698,13 @@
   <div class="col-historico">
     <div class="section-label">Histórico</div>
     <div class="hist-date-bar">
-      <div id="hist-cal"></div>
+      <div class="hist-date-toggle" onclick="toggleCalendar()">
+        <span class="hist-date-toggle-label" id="hist-date-toggle-label">—</span>
+        <span class="hist-date-toggle-arrow" id="hist-date-toggle-arrow">▼</span>
+      </div>
+      <div class="hist-cal-panel" id="hist-cal-panel">
+        <div id="hist-cal"></div>
+      </div>
       <div class="hist-day-summary" id="hist-day-summary"></div>
     </div>
     <div id="history-list"><div class="hist-empty">sem pedidos ainda</div></div>
@@ -1275,6 +1302,19 @@ function renderCalendar() {
     </div>`;
 }
 
+function toggleCalendar() {
+  const panel = document.getElementById('hist-cal-panel');
+  const arrow = document.getElementById('hist-date-toggle-arrow');
+  const open  = panel.classList.toggle('open');
+  arrow.textContent = open ? '▲' : '▼';
+}
+
+function updateToggleLabel() {
+  const today = new Date().toLocaleDateString('pt-PT');
+  const label = selectedCalDate === today ? `Hoje  ${selectedCalDate}` : selectedCalDate;
+  document.getElementById('hist-date-toggle-label').textContent = label;
+}
+
 function prevMonth() {
   if (--calMonth < 0) { calMonth = 11; calYear--; }
   renderCalendar();
@@ -1287,11 +1327,16 @@ function nextMonth() {
 
 function selectCalDay(dateStr) {
   selectedCalDate = dateStr;
+  // fecha o calendário após selecionar
+  document.getElementById('hist-cal-panel').classList.remove('open');
+  document.getElementById('hist-date-toggle-arrow').textContent = '▼';
   renderCalendar();
+  updateToggleLabel();
   renderHistory();
 }
 
 function refreshHistoryUI() {
+  updateToggleLabel();
   renderCalendar();
   renderHistory();
 }
@@ -1345,6 +1390,7 @@ function renderHistory() {
 
 renderProducts();
 renderOrder();
+updateToggleLabel();
 renderCalendar();
 </script>
 </body>
