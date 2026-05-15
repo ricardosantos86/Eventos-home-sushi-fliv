@@ -106,12 +106,17 @@
     overflow: hidden;
   }
 
-  /* LEFT — PRODUTOS */
-  .col-produtos {
+  /* LEFT — coluna esquerda (produtos + pedido empilhados) */
+  .col-left {
     flex: 1;
-    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
     border-right: 1px solid var(--border);
-    overflow-y: auto;
+    overflow: hidden;
+  }
+  .col-produtos {
+    padding: 24px 28px 16px;
+    border-bottom: 1px solid var(--border);
   }
   .section-label {
     font-family: var(--mono);
@@ -203,20 +208,16 @@
     padding: 0 4px;
   }
 
-  /* MIDDLE — PEDIDO */
+  /* PEDIDO — em baixo dos produtos */
   .col-pedido {
-    width: 300px;
-    padding: 24px 20px;
-    border-right: 1px solid var(--border);
+    flex: 1;
+    padding: 20px 28px;
     display: flex;
     flex-direction: column;
-    gap: 0;
-    background: var(--surface);
-    box-shadow: 2px 0 12px rgba(0,0,0,0.04);
+    overflow: hidden;
   }
   .order-lines {
     flex: 1;
-    min-height: 120px;
     overflow-y: auto;
   }
   .order-line {
@@ -677,35 +678,38 @@
 
 <div class="main">
 
-  <!-- PRODUTOS -->
-  <div class="col-produtos">
-    <div class="section-label">Produtos</div>
-    <div id="products-list"></div>
-  </div>
+  <!-- ESQUERDA: Produtos + Pedido -->
+  <div class="col-left">
 
-  <!-- PEDIDO ATUAL -->
-  <div class="col-pedido">
-    <div class="section-label">Pedido atual</div>
-    <div class="edit-banner" id="edit-banner">
-      <span id="edit-banner-text">A editar pedido</span>
-      <button class="edit-banner-cancel" onclick="cancelEdit()" title="Cancelar edição">✕</button>
+    <div class="col-produtos">
+      <div class="section-label">Produtos</div>
+      <div id="products-list"></div>
     </div>
-    <div id="order-lines" class="order-lines">
-      <div class="empty-msg">— vazio —</div>
+
+    <div class="col-pedido">
+      <div class="section-label">Pedido atual</div>
+      <div class="edit-banner" id="edit-banner">
+        <span id="edit-banner-text">A editar pedido</span>
+        <button class="edit-banner-cancel" onclick="cancelEdit()" title="Cancelar edição">✕</button>
+      </div>
+      <div id="order-lines" class="order-lines">
+        <div class="empty-msg">— vazio —</div>
+      </div>
+      <div class="obs-area">
+        <span class="obs-label">Observações</span>
+        <textarea class="obs-input" id="obs-input" placeholder="Sem glúten, alergia a amendoim..."></textarea>
+      </div>
+      <div class="total-block">
+        <div class="total-label">Total</div>
+        <div class="total-val" id="total-val">0,00 €</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-finalize" id="btn-finalize" disabled onclick="finalizeOrder()">Finalizar Pedido</button>
+        <button class="btn-print" id="btn-print" disabled onclick="printOrder()">Imprimir e Finalizar</button>
+      </div>
+      <button class="btn-clear" onclick="clearOrder()">Limpar pedido</button>
     </div>
-    <div class="obs-area">
-      <span class="obs-label">Observações</span>
-      <textarea class="obs-input" id="obs-input" placeholder="Sem glúten, alergia a amendoim..."></textarea>
-    </div>
-    <div class="total-block">
-      <div class="total-label">Total</div>
-      <div class="total-val" id="total-val">0,00 €</div>
-    </div>
-    <div class="btn-row">
-      <button class="btn-finalize" id="btn-finalize" disabled onclick="finalizeOrder()">Finalizar Pedido</button>
-      <button class="btn-print" id="btn-print" disabled onclick="printOrder()">Imprimir e Finalizar</button>
-    </div>
-    <button class="btn-clear" onclick="clearOrder()">Limpar pedido</button>
+
   </div>
 
   <!-- HISTÓRICO -->
