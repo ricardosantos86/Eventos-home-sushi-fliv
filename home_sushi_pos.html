@@ -935,10 +935,17 @@ async function loadHistory() {
     if (!r.ok) return;
     const d = await r.json();
     if (Array.isArray(d.history) && d.history.length) {
-      history = d.history.slice().reverse(); // servidor guarda por ordem crescente
-      renderHistory();
+      // normaliza total para string (servidor devolve number, frontend usa string)
+      history = d.history.slice().reverse().map(o => ({
+        ...o,
+        total: parseFloat(o.total).toFixed(2),
+      }));
     }
-  } catch {}
+  } catch (e) {
+    console.warn('Erro ao carregar histórico:', e);
+    return;
+  }
+  renderHistory();
 }
 
 checkServer().then(loadHistory);
