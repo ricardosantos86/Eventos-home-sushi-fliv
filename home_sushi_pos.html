@@ -538,10 +538,24 @@
   .server-status { cursor: pointer; }
   .server-status:hover .server-label { text-decoration: underline; }
 
-  /* SCROLLBAR */
+  /* SCROLLBAR — global (subtil) */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* SCROLLBAR — histórico (mais visível) */
+  .col-historico::-webkit-scrollbar { width: 7px; }
+  .col-historico::-webkit-scrollbar-track {
+    background: var(--surface2);
+    border-radius: 4px;
+    margin: 6px 0;
+  }
+  .col-historico::-webkit-scrollbar-thumb {
+    background: #bbb;
+    border-radius: 4px;
+    border: 1px solid var(--surface2);
+  }
+  .col-historico::-webkit-scrollbar-thumb:hover { background: #999; }
 
   /* PAGAMENTO */
   .payment-btns { display: flex; gap: 10px; margin-bottom: 16px; }
