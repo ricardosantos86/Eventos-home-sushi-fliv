@@ -541,6 +541,35 @@
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* PAGAMENTO */
+  .payment-btns { display: flex; gap: 10px; margin-bottom: 16px; }
+  .btn-pay {
+    flex: 1; padding: 18px 10px;
+    border: 2px solid var(--border2); border-radius: 10px;
+    background: var(--surface2);
+    font-family: var(--sans); font-size: 14px; font-weight: 700;
+    letter-spacing: 0.05em; cursor: pointer; color: var(--text);
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .btn-pay:hover { border-color: var(--accent); }
+  .btn-pay.selected { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+  .troco-block { margin-top: 4px; }
+  .troco-input {
+    width: 100%; padding: 10px 12px;
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px;
+    font-family: var(--mono); font-size: 15px; color: var(--text);
+    margin-bottom: 8px; transition: border-color 0.15s;
+  }
+  .troco-input:focus { outline: none; border-color: var(--accent); }
+  .troco-result { font-family: var(--mono); font-size: 20px; font-weight: 500; min-height: 28px; }
+  .hist-pay {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em;
+    padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 500;
+  }
+  .hist-pay.mbway    { background: #dbeafe; color: #1d4ed8; }
+  .hist-pay.dinheiro { background: #dcfce7; color: #15803d; }
+  .hist-troco { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -608,6 +637,26 @@
 
 <div id="print-area"></div>
 
+<!-- Modal: forma de pagamento -->
+<div class="modal-backdrop" id="modal-payment">
+  <div class="modal">
+    <h2>Forma de Pagamento</h2>
+    <div class="payment-btns">
+      <button class="btn-pay" id="btn-pay-mbway" onclick="selectPayMethod('MBWAY')">MBWAY</button>
+      <button class="btn-pay" id="btn-pay-dinheiro" onclick="selectPayMethod('DINHEIRO')">DINHEIRO</button>
+    </div>
+    <div class="troco-block" id="troco-block" style="display:none;">
+      <label>Valor entregue</label>
+      <input class="troco-input" type="number" id="valor-entregue" min="0" step="0.01" placeholder="0.00" oninput="calcTroco()">
+      <div class="troco-result" id="troco-result"></div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn-modal-cancel" onclick="closePaymentModal()">Cancelar</button>
+      <button class="btn-modal-save" id="btn-pay-confirm" onclick="confirmPayment()" disabled>Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: configurar impressora -->
 <div class="modal-backdrop" id="modal-printer">
   <div class="modal">
@@ -633,7 +682,9 @@ const PRODUCTS = [
 let qty = {};
 let history = [];
 let orderCounter = 0;
-let editingNum = null; // número do pedido em edição, ou null se novo
+let editingNum = null;
+let selectedPayMethod = null;
+let pendingAction = null;
 
 PRODUCTS.forEach(p => qty[p.id] = 0);
 
@@ -662,6 +713,9 @@ async function reprintOrder(index) {
         date: o.date, time: o.time,
         total: parseFloat(o.total),
         obs: o.obs || '',
+        pagamento: o.pagamento || '',
+        valor_entregue: o.valorEntregue || 0,
+        troco: o.troco || 0,
         lines: o.lines.map(l => {
           const p = PRODUCTS.find(p => p.name === l.name);
           return { name: l.name, qty: l.qty, price: p ? p.price : 0 };
@@ -890,11 +944,102 @@ document.getElementById('modal-printer').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
 
-async function finalizeOrder() {
-  const lines = PRODUCTS.filter(p => qty[p.id] > 0);
-  if (!lines.length) return;
-  if (!serverOnline) { alert('Servidor offline. Inicia o iniciar.bat primeiro.'); return; }
+// ── Modal pagamento ──────────────────────────────────────────────────────────
 
+function getCurrentTotal() {
+  let total = 0;
+  PRODUCTS.filter(p => qty[p.id] > 0).forEach(p => total += p.price * qty[p.id]);
+  return total;
+}
+
+function openPaymentModal(action) {
+  selectedPayMethod = null;
+  pendingAction = action;
+  document.getElementById('btn-pay-mbway').classList.remove('selected');
+  document.getElementById('btn-pay-dinheiro').classList.remove('selected');
+  document.getElementById('troco-block').style.display = 'none';
+  document.getElementById('valor-entregue').value = '';
+  document.getElementById('troco-result').textContent = '';
+  document.getElementById('btn-pay-confirm').disabled = true;
+  document.getElementById('modal-payment').classList.add('open');
+}
+
+function closePaymentModal() {
+  document.getElementById('modal-payment').classList.remove('open');
+  pendingAction = null;
+  selectedPayMethod = null;
+}
+
+function selectPayMethod(method) {
+  selectedPayMethod = method;
+  document.getElementById('btn-pay-mbway').classList.toggle('selected', method === 'MBWAY');
+  document.getElementById('btn-pay-dinheiro').classList.toggle('selected', method === 'DINHEIRO');
+  const trocoBlock = document.getElementById('troco-block');
+  if (method === 'DINHEIRO') {
+    trocoBlock.style.display = 'block';
+    document.getElementById('btn-pay-confirm').disabled = true;
+    document.getElementById('valor-entregue').focus();
+  } else {
+    trocoBlock.style.display = 'none';
+    document.getElementById('btn-pay-confirm').disabled = false;
+  }
+}
+
+function calcTroco() {
+  const total = getCurrentTotal();
+  const valor = parseFloat(document.getElementById('valor-entregue').value) || 0;
+  const troco = valor - total;
+  const el  = document.getElementById('troco-result');
+  const btn = document.getElementById('btn-pay-confirm');
+  if (valor > 0 && valor >= total) {
+    el.textContent = `Troco: ${troco.toFixed(2).replace('.', ',')} €`;
+    el.style.color = 'var(--accent)';
+    btn.disabled   = false;
+  } else if (valor > 0) {
+    el.textContent = 'Valor insuficiente';
+    el.style.color = 'var(--red)';
+    btn.disabled   = true;
+  } else {
+    el.textContent = '';
+    btn.disabled   = true;
+  }
+}
+
+async function confirmPayment() {
+  if (!selectedPayMethod) return;
+  const total = getCurrentTotal();
+  const pagamento = { metodo: selectedPayMethod, valorEntregue: 0, troco: 0 };
+  if (selectedPayMethod === 'DINHEIRO') {
+    const valor = parseFloat(document.getElementById('valor-entregue').value) || 0;
+    pagamento.valorEntregue = valor;
+    pagamento.troco = Math.max(0, valor - total);
+  }
+  closePaymentModal();
+  if (pendingAction === 'finalize') await doFinalize(pagamento);
+  else if (pendingAction === 'print') await doPrint(pagamento);
+}
+
+document.getElementById('modal-payment').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closePaymentModal();
+});
+
+// ── Ações de pedido ──────────────────────────────────────────────────────────
+
+async function finalizeOrder() {
+  if (!PRODUCTS.filter(p => qty[p.id] > 0).length) return;
+  if (!serverOnline) { alert('Servidor offline. Inicia o iniciar.bat primeiro.'); return; }
+  openPaymentModal('finalize');
+}
+
+async function printOrder() {
+  if (!PRODUCTS.filter(p => qty[p.id] > 0).length) return;
+  if (!serverOnline) { alert('Servidor offline. Inicia o iniciar.bat primeiro.'); return; }
+  if (!configuredPrinter) { openPrinterModal(); return; }
+  openPaymentModal('print');
+}
+
+async function doFinalize(pagamento) {
+  const lines = PRODUCTS.filter(p => qty[p.id] > 0);
   const now     = new Date();
   const dateStr = now.toLocaleDateString('pt-PT');
   const timeStr = now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
@@ -913,6 +1058,9 @@ async function finalizeOrder() {
       body: JSON.stringify({
         date: dateStr, time: timeStr, total, obs,
         editNum: editingNum,
+        pagamento: pagamento.metodo,
+        valor_entregue: pagamento.valorEntregue,
+        troco: pagamento.troco,
         lines: lines.map(p => ({ name: p.name, qty: qty[p.id], price: p.price })),
       }),
     });
@@ -925,6 +1073,9 @@ async function finalizeOrder() {
       num, date: dateStr, time: timeStr,
       lines: lines.map(p => ({ name: p.name, qty: qty[p.id] })),
       total: total.toFixed(2),
+      pagamento: pagamento.metodo,
+      valorEntregue: pagamento.valorEntregue,
+      troco: pagamento.troco,
     };
     if (editingNum) {
       const idx = history.findIndex(o => o.num === editingNum);
@@ -941,20 +1092,9 @@ async function finalizeOrder() {
   }
 }
 
-async function printOrder() {
+async function doPrint(pagamento) {
   const lines = PRODUCTS.filter(p => qty[p.id] > 0);
-  if (!lines.length) return;
-
   const btn = document.getElementById('btn-print');
-
-  if (!serverOnline) {
-    alert('Servidor offline. Inicia o iniciar.bat primeiro.');
-    return;
-  }
-  if (!configuredPrinter) {
-    openPrinterModal();
-    return;
-  }
 
   orderCounter++;
   let num       = String(orderCounter).padStart(4, '0');
@@ -975,7 +1115,10 @@ async function printOrder() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         date: dateStr, time: timeStr, total, obs,
-        editNum: editingNum,  // null = novo pedido, string = edição
+        editNum: editingNum,
+        pagamento: pagamento.metodo,
+        valor_entregue: pagamento.valorEntregue,
+        troco: pagamento.troco,
         lines: lines.map(p => ({ name: p.name, qty: qty[p.id], price: p.price })),
       }),
     });
@@ -997,6 +1140,9 @@ async function printOrder() {
     num, date: dateStr, time: timeStr,
     lines: lines.map(p => ({ name: p.name, qty: qty[p.id] })),
     total: total.toFixed(2),
+    pagamento: pagamento.metodo,
+    valorEntregue: pagamento.valorEntregue,
+    troco: pagamento.troco,
   };
   if (editingNum) {
     const idx = history.findIndex(o => o.num === editingNum);
@@ -1023,21 +1169,31 @@ function renderHistory() {
     el.innerHTML = '<div class="hist-empty">sem pedidos ainda</div>';
     return;
   }
-  el.innerHTML = history.map((o, i) => `
+  el.innerHTML = history.map((o, i) => {
+    const payBadge = o.pagamento
+      ? `<span class="hist-pay ${o.pagamento.toLowerCase()}">${o.pagamento}</span>`
+      : '';
+    const trocoLine = (o.pagamento === 'DINHEIRO' && o.troco > 0)
+      ? `<div class="hist-troco">Troco: ${parseFloat(o.troco).toFixed(2).replace('.', ',')} €</div>`
+      : '';
+    return `
     <div class="hist-card">
       <div class="hist-header">
         <span class="hist-num">#${o.num}</span>
         <span class="hist-time">${o.date} ${o.time}</span>
+        ${payBadge}
         <span class="hist-total">${o.total.replace('.', ',')} €</span>
       </div>
       <div class="hist-body">
         ${o.lines.map(l => `<div class="hist-item">${l.qty}× ${l.name}</div>`).join('')}
+        ${trocoLine}
         <div style="margin-top:8px; display:flex; gap:6px;">
           <button class="btn-edit" onclick="loadOrderForEdit(${i})">Editar</button>
           <button class="btn-edit" onclick="reprintOrder(${i})">Imprimir</button>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 renderProducts();

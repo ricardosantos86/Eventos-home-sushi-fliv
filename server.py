@@ -199,6 +199,13 @@ def build_escpos_estabelecimento(order):
         buf += ESC + b'E\x00'
         buf = _obs_lines(buf, obs)
 
+    # ── Pagamento (cópia interna) ──
+    pagamento = order.get('pagamento', '')
+    if pagamento:
+        buf += ESC + b'E\x01'
+        buf += esc_line(pagamento)
+        buf += ESC + b'E\x00'
+
     buf += b'\n\n\n'
     buf += GS + b'V\x41\x03'   # corte
     return bytes(buf)
@@ -276,6 +283,20 @@ def build_escpos_cliente(order):
     buf += ESC + b'E\x00'
     buf += divider()
 
+    # ── Pagamento ──
+    pagamento = order.get('pagamento', '')
+    if pagamento:
+        buf += esc_line(f"{'PAGAMENTO:':<12}{pagamento}")
+        if pagamento == 'DINHEIRO':
+            valor_entregue = float(order.get('valor_entregue', 0) or 0)
+            troco          = float(order.get('troco', 0) or 0)
+            if valor_entregue > 0:
+                val_s   = f"{valor_entregue:.2f}".replace('.', ',') + '€'
+                troco_s = f"{troco:.2f}".replace('.', ',') + '€'
+                buf += esc_line(f"{'ENTREGUE:':<12}{val_s}")
+                buf += esc_line(f"{'TROCO:':<12}{troco_s}")
+        buf += divider()
+
     # ── Rodapé ──
     buf += b'\n'
     buf += ESC + b'a\x01'          # centrar
@@ -335,12 +356,15 @@ def finalize_order():
 
     history = load_history()
     entry = {
-        'num':   num,
-        'date':  order.get('date', ''),
-        'time':  order.get('time', ''),
-        'obs':   order.get('obs', ''),
-        'lines': order.get('lines', []),
-        'total': order.get('total', 0),
+        'num':            num,
+        'date':           order.get('date', ''),
+        'time':           order.get('time', ''),
+        'obs':            order.get('obs', ''),
+        'lines':          order.get('lines', []),
+        'total':          order.get('total', 0),
+        'pagamento':      order.get('pagamento', ''),
+        'valor_entregue': order.get('valor_entregue', 0),
+        'troco':          order.get('troco', 0),
     }
     if is_edit:
         idx = next((i for i, o in enumerate(history) if o.get('num') == num), None)
@@ -385,12 +409,15 @@ def print_order():
     # Guarda no histórico
     history = load_history()
     entry = {
-        'num':   num,
-        'date':  order.get('date', ''),
-        'time':  order.get('time', ''),
-        'obs':   order.get('obs', ''),
-        'lines': order.get('lines', []),
-        'total': order.get('total', 0),
+        'num':            num,
+        'date':           order.get('date', ''),
+        'time':           order.get('time', ''),
+        'obs':            order.get('obs', ''),
+        'lines':          order.get('lines', []),
+        'total':          order.get('total', 0),
+        'pagamento':      order.get('pagamento', ''),
+        'valor_entregue': order.get('valor_entregue', 0),
+        'troco':          order.get('troco', 0),
     }
     if is_edit:
         idx = next((i for i, o in enumerate(history) if o.get('num') == num), None)
