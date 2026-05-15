@@ -1,6 +1,8 @@
 import os
 import json
 import threading
+from datetime import datetime
+from collections import defaultdict
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import win32print
@@ -318,6 +320,102 @@ def build_escpos_cliente(order):
     return bytes(buf)
 
 
+def build_escpos_daily_report(date_str, orders):
+    """Talão de fecho do dia (Z-report): resumo, pagamentos e itens."""
+    buf = bytearray()
+    buf += ESC + b'@'
+    buf += CODEPAGE_CP858
+
+    # ── Cabeçalho ──
+    logo = image_to_escpos(LOGO_PATH)
+    if logo:
+        buf += logo
+        buf += b'\n'
+    buf += ESC + b'a\x01'
+    buf += ESC + b'!\x38'
+    buf += esc_line('FECHO DO DIA')
+    buf += ESC + b'!\x00'
+    buf += b'\n'
+    buf += esc_line(f"Data: {date_str}")
+    buf += esc_line(f"Emitido: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    buf += ESC + b'a\x00'
+    buf += divider()
+
+    # ── Resumo ──
+    total_geral = sum(float(o.get('total', 0) or 0) for o in orders)
+    n_pedidos   = len(orders)
+
+    buf += ESC + b'E\x01'
+    buf += esc_line('RESUMO')
+    buf += ESC + b'E\x00'
+    n_str     = str(n_pedidos)
+    total_str = f"{total_geral:.2f}".replace('.', ',') + '€'
+    buf += esc_line(f"{'Pedidos:':<20}{n_str:>{W - 20}}")
+    buf += esc_line(f"{'Total:':<20}{total_str:>{W - 20}}")
+    buf += divider()
+
+    # ── Por forma de pagamento ──
+    by_pay = defaultdict(lambda: {'count': 0, 'total': 0.0})
+    for o in orders:
+        pay = (o.get('pagamento') or 'SEM REGISTO').upper()
+        by_pay[pay]['count'] += 1
+        by_pay[pay]['total'] += float(o.get('total', 0) or 0)
+
+    if by_pay:
+        buf += ESC + b'E\x01'
+        buf += esc_line('PAGAMENTOS')
+        buf += ESC + b'E\x00'
+        for pay, data in sorted(by_pay.items()):
+            label    = f"{pay} ({data['count']})"
+            total_s  = f"{data['total']:.2f}".replace('.', ',') + '€'
+            buf += esc_line(f"{label:<20}{total_s:>{W - 20}}")
+        buf += divider()
+
+    # ── Itens vendidos ──
+    by_item = defaultdict(lambda: {'qty': 0, 'total': 0.0})
+    for o in orders:
+        for line in o.get('lines', []):
+            name  = line.get('name', '')
+            qty   = int(line.get('qty', 0) or 0)
+            price = float(line.get('price', 0) or 0)
+            by_item[name]['qty']   += qty
+            by_item[name]['total'] += qty * price
+
+    if by_item:
+        buf += ESC + b'E\x01'
+        buf += esc_line('ITENS VENDIDOS')
+        buf += ESC + b'E\x00'
+        COL_QTY  = 4
+        COL_SUB  = 9
+        COL_NAME = W - COL_QTY - COL_SUB - 2
+        total_qty = 0
+        for name, data in sorted(by_item.items(), key=lambda kv: -kv[1]['qty']):
+            qty_s = f"{data['qty']}x"
+            sub   = f"{data['total']:.2f}".replace('.', ',') + '€'
+            n     = name[:COL_NAME]
+            buf += esc_line(f"{qty_s:<{COL_QTY}}  {n:<{COL_NAME}}{sub:>{COL_SUB}}")
+            total_qty += data['qty']
+        buf += divider()
+        buf += esc_line(f"{'Total artigos:':<20}{total_qty:>{W - 20}}")
+        buf += divider()
+
+    # ── Total geral ──
+    buf += ESC + b'a\x00'
+    buf += ESC + b'!\x10'
+    buf += ESC + b'E\x01'
+    buf += esc_line(f"TOTAL{total_str:>{W - 5}}")
+    buf += ESC + b'!\x00'
+    buf += ESC + b'E\x00'
+    buf += divider()
+
+    buf += b'\n'
+    buf += ESC + b'a\x01'
+    buf += esc_line('--- Fim de relatório ---')
+    buf += b'\n\n\n'
+    buf += GS + b'V\x41\x03'
+    return bytes(buf)
+
+
 # ── Rotas API ─────────────────────────────────────────────────────────────────
 
 @app.route('/health')
@@ -446,6 +544,36 @@ def print_order():
 
     save_history(history)
     return jsonify({'ok': True, 'num': num})
+
+
+@app.route('/api/daily_report', methods=['POST'])
+def print_daily_report():
+    payload = request.get_json() or {}
+    date_str = payload.get('date', '').strip()
+    if not date_str:
+        return jsonify({'ok': False, 'error': 'Data em falta'}), 400
+
+    cfg = load_config()
+    printer_name = cfg.get('printer', '')
+    if not printer_name:
+        return jsonify({'ok': False, 'error': 'NO_PRINTER'}), 400
+
+    history = load_history()
+    orders  = [o for o in history if o.get('date') == date_str]
+    if not orders:
+        return jsonify({'ok': False, 'error': 'Sem pedidos para este dia'}), 404
+
+    try:
+        data = build_escpos_daily_report(date_str, orders)
+        raw_print(printer_name, data)
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+    return jsonify({
+        'ok': True,
+        'pedidos': len(orders),
+        'total': sum(float(o.get('total', 0) or 0) for o in orders),
+    })
 
 
 if __name__ == '__main__':

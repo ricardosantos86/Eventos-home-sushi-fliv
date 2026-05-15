@@ -646,11 +646,21 @@
   .hist-cal-day.is-today.has-orders { color: var(--accent); }
   .hist-cal-day.selected { background: var(--accent) !important; color: #fff !important; box-shadow: none !important; }
   .hist-day-summary {
-    display: flex; justify-content: space-between;
+    display: flex; justify-content: space-between; align-items: center;
     font-family: var(--mono); font-size: 10px;
     color: var(--text-muted); padding: 0 2px;
+    gap: 8px;
   }
   .hist-day-summary .sum-total { font-weight: 500; color: var(--text); }
+  .btn-fecho {
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border2); border-radius: 6px;
+    padding: 6px 10px; font-size: 11px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn-fecho:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-fecho:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -791,6 +801,29 @@ function updateClock() {
 }
 updateClock();
 setInterval(updateClock, 60000);
+
+async function printDailyReport() {
+  if (!serverOnline) { alert('Servidor offline.'); return; }
+  if (!configuredPrinter) { openPrinterModal(); return; }
+
+  const date = selectedCalDate;
+  const dayOrders = history.filter(o => o.date === date);
+  if (!dayOrders.length) { alert('Sem pedidos para este dia.'); return; }
+
+  if (!confirm(`Imprimir fecho do dia ${date}?\n${dayOrders.length} pedido(s).`)) return;
+
+  try {
+    const r = await fetch(SERVER + '/api/daily_report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date }),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Erro desconhecido');
+  } catch (e) {
+    alert('Erro ao imprimir fecho: ' + e.message);
+  }
+}
 
 async function reprintOrder(index) {
   const o = history[index];
@@ -1366,7 +1399,8 @@ function renderHistory() {
     const dayTotal = filtered.reduce((s, o) => s + parseFloat(o.total), 0);
     summary.innerHTML = `
       <span>${filtered.length} pedido${filtered.length !== 1 ? 's' : ''}</span>
-      <span class="sum-total">${dayTotal.toFixed(2).replace('.', ',')} €</span>`;
+      <span class="sum-total">${dayTotal.toFixed(2).replace('.', ',')} €</span>
+      <button class="btn-fecho" onclick="printDailyReport()" title="Imprimir fecho do dia">Fecho do dia</button>`;
   } else {
     summary.innerHTML = '';
   }
