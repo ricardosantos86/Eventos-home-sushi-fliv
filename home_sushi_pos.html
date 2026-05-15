@@ -206,24 +206,26 @@
   /* MIDDLE — PEDIDO */
   .col-pedido {
     width: 300px;
-    padding: 24px 20px;
+    padding: 16px 18px;
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     gap: 0;
     background: var(--surface);
     box-shadow: 2px 0 12px rgba(0,0,0,0.04);
+    min-height: 0;
   }
+  .col-pedido .section-label { margin-bottom: 10px; }
   .order-lines {
     flex: 1;
-    min-height: 120px;
+    min-height: 0;
     overflow-y: auto;
   }
   .order-line {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 10px 0;
+    padding: 8px 0;
     border-bottom: 1px solid var(--border);
   }
   .order-line:last-child { border-bottom: none; }
@@ -254,8 +256,8 @@
     font-family: var(--mono);
   }
   .total-block {
-    margin-top: 16px;
-    padding-top: 16px;
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 2px solid var(--accent);
   }
   .total-label {
@@ -264,23 +266,24 @@
     letter-spacing: 0.1em;
     color: var(--text-dim);
     text-transform: uppercase;
-    margin-bottom: 6px;
+    margin-bottom: 2px;
   }
   .total-val {
     font-family: var(--mono);
-    font-size: 32px;
+    font-size: 26px;
     font-weight: 500;
     color: var(--accent);
     letter-spacing: -0.02em;
+    line-height: 1.1;
   }
   .btn-row {
-    margin-top: 20px;
+    margin-top: 12px;
     display: flex;
     gap: 8px;
   }
   .btn-print {
     flex: 1;
-    padding: 13px 8px;
+    padding: 10px 8px;
     background: var(--accent);
     color: #ffffff;
     border: none;
@@ -303,7 +306,7 @@
   }
   .btn-finalize {
     flex: 1;
-    padding: 13px 8px;
+    padding: 10px 8px;
     background: transparent;
     color: var(--text);
     border: 1.5px solid var(--border2);
@@ -356,9 +359,22 @@
     white-space: nowrap;
   }
   .btn-edit:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-delete {
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--red);
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
+    white-space: nowrap;
+  }
+  .btn-delete:hover { background: var(--red); color: #fff; border-color: var(--red); }
 
   .obs-area {
-    margin-top: 14px;
+    margin-top: 10px;
   }
   .obs-label {
     font-family: var(--mono);
@@ -366,12 +382,12 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--text-dim);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     display: block;
   }
   .obs-input {
     width: 100%;
-    padding: 10px 12px;
+    padding: 8px 10px;
     background: var(--surface2);
     border: 1px solid var(--border2);
     border-radius: 8px;
@@ -379,7 +395,7 @@
     font-size: 12px;
     color: var(--text);
     resize: none;
-    height: 64px;
+    height: 44px;
     transition: border-color 0.15s;
   }
   .obs-input:focus {
@@ -389,9 +405,9 @@
   .obs-input::placeholder { color: var(--text-dim); }
 
   .btn-clear {
-    margin-top: 8px;
+    margin-top: 6px;
     width: 100%;
-    padding: 10px;
+    padding: 7px;
     background: transparent;
     color: var(--text-dim);
     border: 1px solid var(--border);
@@ -853,6 +869,27 @@ async function reprintOrder(index) {
     if (!data.ok) throw new Error(data.error);
   } catch (e) {
     alert('Erro ao imprimir: ' + e.message);
+  }
+}
+
+async function deleteOrder(index) {
+  const o = history[index];
+  if (!o) return;
+  if (!confirm(`Eliminar pedido #${o.num} (${o.total.replace('.', ',')} €)?\nEsta acao nao pode ser revertida.`)) return;
+  if (!serverOnline) { alert('Servidor offline.'); return; }
+
+  try {
+    const r = await fetch(SERVER + '/api/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ num: o.num }),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Erro desconhecido');
+    history.splice(index, 1);
+    refreshHistoryUI();
+  } catch (e) {
+    alert('Erro ao eliminar: ' + e.message);
   }
 }
 
@@ -1430,6 +1467,7 @@ function renderHistory() {
           <div style="margin-top:8px; display:flex; gap:6px;">
             <button class="btn-edit" onclick="loadOrderForEdit(${i})">Editar</button>
             <button class="btn-edit" onclick="reprintOrder(${i})">Imprimir</button>
+            <button class="btn-delete" onclick="deleteOrder(${i})" title="Eliminar pedido #${o.num}">Eliminar</button>
           </div>
         </div>
       </div>`;

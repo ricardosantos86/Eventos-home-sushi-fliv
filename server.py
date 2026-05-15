@@ -546,6 +546,22 @@ def print_order():
     return jsonify({'ok': True, 'num': num})
 
 
+@app.route('/api/delete', methods=['POST'])
+def delete_order():
+    payload = request.get_json() or {}
+    num = str(payload.get('num', '')).strip()
+    if not num:
+        return jsonify({'ok': False, 'error': 'Numero em falta'}), 400
+
+    history = load_history()
+    new_history = [o for o in history if str(o.get('num', '')) != num]
+    if len(new_history) == len(history):
+        return jsonify({'ok': False, 'error': 'Pedido nao encontrado'}), 404
+
+    save_history(new_history)
+    return jsonify({'ok': True, 'num': num})
+
+
 @app.route('/api/daily_report', methods=['POST'])
 def print_daily_report():
     payload = request.get_json() or {}
