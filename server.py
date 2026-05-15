@@ -1,5 +1,6 @@
 import os
 import json
+import threading
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import win32print
@@ -7,6 +8,8 @@ from PIL import Image
 
 app = Flask(__name__)
 CORS(app)
+
+counter_lock = threading.Lock()
 
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE  = os.path.join(BASE_DIR, 'config.json')
@@ -60,10 +63,13 @@ def load_config():
     return {}
 
 def save_config(data):
-    cfg = load_config()
-    cfg.update(data)
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(cfg, f, ensure_ascii=False, indent=2)
+    try:
+        cfg = load_config()
+        cfg.update(data)
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+    except IOError as e:
+        print(f'  Erro ao guardar config: {e}')
 
 
 # ── Impressora ────────────────────────────────────────────────────────────────
@@ -352,7 +358,9 @@ def finalize_order():
 
     edit_num = order.get('editNum')
     is_edit  = bool(edit_num)
-    num      = edit_num if is_edit else f'{order_counter:04d}'
+
+    with counter_lock:
+        num = edit_num if is_edit else f'{order_counter:04d}'
 
     history = load_history()
     entry = {
@@ -374,7 +382,8 @@ def finalize_order():
             history.append(entry)
     else:
         history.append(entry)
-        order_counter += 1
+        with counter_lock:
+            order_counter += 1
 
     save_history(history)
     return jsonify({'ok': True, 'num': num})
@@ -395,8 +404,8 @@ def print_order():
     edit_num = order.get('editNum')
     is_edit  = bool(edit_num)
 
-    # Atribui número — reutiliza se for edição
-    num = edit_num if is_edit else f'{order_counter:04d}'
+    with counter_lock:
+        num = edit_num if is_edit else f'{order_counter:04d}'
     order['num'] = num
 
     try:
@@ -427,7 +436,8 @@ def print_order():
             history.append(entry)
     else:
         history.append(entry)
-        order_counter += 1
+        with counter_lock:
+            order_counter += 1
 
     save_history(history)
     return jsonify({'ok': True, 'num': num})

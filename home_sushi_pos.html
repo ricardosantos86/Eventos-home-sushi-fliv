@@ -1096,8 +1096,6 @@ async function doPrint(pagamento) {
   const lines = PRODUCTS.filter(p => qty[p.id] > 0);
   const btn = document.getElementById('btn-print');
 
-  orderCounter++;
-  let num       = String(orderCounter).padStart(4, '0');
   const now     = new Date();
   const dateStr = now.toLocaleDateString('pt-PT');
   const timeStr = now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
@@ -1108,6 +1106,7 @@ async function doPrint(pagamento) {
   btn.textContent = 'A imprimir...';
 
   const obs = document.getElementById('obs-input').value.trim();
+  let num;
 
   try {
     const r = await fetch(SERVER + '/api/print', {
