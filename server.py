@@ -731,7 +731,7 @@ def get_queue():
     history = load_history()
     pending = [o for o in history if o.get('status') == 'pendente']
     pending.sort(key=lambda o: int(o.get('num', 0) or 0))
-    cancelled = [o for o in history if o.get('status') == 'rejeitado']
+    cancelled = [o for o in history if o.get('status') in ('rejeitado', 'removido')]
     cancelled.sort(key=lambda o: int(o.get('num', 0) or 0), reverse=True)
     return jsonify({
         'queue': pending,
@@ -787,10 +787,10 @@ def reject_queue_order():
         if history[idx].get('status') != 'pendente':
             return jsonify({'ok': False, 'error': 'Pedido ja processado'}), 409
 
-        history[idx]['status'] = 'rejeitado'
+        history[idx]['status'] = 'removido'
         save_history(history)
 
-    return jsonify({'ok': True, 'num': num, 'status': 'rejeitado'})
+    return jsonify({'ok': True, 'num': num, 'status': 'removido'})
 
 
 @app.route('/api/queue/restore', methods=['POST'])
@@ -805,8 +805,8 @@ def restore_queue_order():
         idx = find_order_index(history, num)
         if idx is None:
             return jsonify({'ok': False, 'error': 'Pedido nao encontrado'}), 404
-        if history[idx].get('status') != 'rejeitado':
-            return jsonify({'ok': False, 'error': 'So pedidos cancelados podem ser recuperados'}), 409
+        if history[idx].get('status') not in ('rejeitado', 'removido'):
+            return jsonify({'ok': False, 'error': 'So pedidos removidos da fila podem ser recuperados'}), 409
 
         history[idx]['status'] = 'pendente'
         save_history(history)

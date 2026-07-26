@@ -664,7 +664,8 @@
   .hist-status.pendente  { background: #fef3c7; color: #b45309; }
   .hist-status.impresso  { background: #dcfce7; color: #15803d; }
   .hist-status.registado { background: #e0e7ff; color: #3730a3; }
-  .hist-status.rejeitado { background: #fee2e2; color: #b91c1c; }
+  .hist-status.rejeitado,
+  .hist-status.removido { background: #fee2e2; color: #b91c1c; }
   .hist-troco { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
   /* CALENDÁRIO DO HISTÓRICO */
@@ -1632,8 +1633,15 @@ function renderHistory() {
     const i         = history.indexOf(o);
     const payBadge  = o.pagamento
       ? `<span class="hist-pay ${o.pagamento.toLowerCase()}">${o.pagamento}</span>` : '';
+    const statusLabel = ({
+      pendente: 'pendente',
+      impresso: 'impresso',
+      registado: 'registado',
+      rejeitado: 'removido',
+      removido: 'removido',
+    })[o.status] || o.status;
     const statusBadge = o.status
-      ? `<span class="hist-status ${o.status}">${o.status}</span>` : '';
+      ? `<span class="hist-status ${o.status === 'rejeitado' ? 'removido' : o.status}">${statusLabel}</span>` : '';
     const trocoLine = (o.pagamento === 'DINHEIRO' && o.troco > 0)
       ? `<div class="hist-troco">Troco: ${parseFloat(o.troco).toFixed(2).replace('.', ',')} €</div>` : '';
     const totalStr = String(o.total).replace('.', ',');

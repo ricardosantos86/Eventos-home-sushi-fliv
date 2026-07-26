@@ -410,11 +410,11 @@
   <div class="header-meta">
     <div class="queue-count"><strong id="count">0</strong> pendente(s)</div>
     <div class="recover-wrap">
-      <button class="btn-recuperar" id="btn-recuperar" onclick="toggleCancelled()" title="Pedidos cancelados">
+      <button class="btn-recuperar" id="btn-recuperar" onclick="toggleCancelled()" title="Pedidos removidos da fila">
         RECUPERAR <span class="badge" id="cancelled-count">0</span>
       </button>
       <div class="recover-panel" id="recover-panel">
-        <div class="recover-panel-head">Pedidos cancelados</div>
+        <div class="recover-panel-head">Removidos da fila</div>
         <div id="cancelled-list" class="cancelled-list"></div>
       </div>
     </div>
@@ -503,7 +503,7 @@ function renderQueue(orders) {
           ${obs}
           <div class="actions">
             <button class="btn btn-ok" ${disabled} onclick="approve('${escapeHtml(o.num)}')">Concluído</button>
-            <button class="btn btn-no" ${disabled} onclick="reject('${escapeHtml(o.num)}')">Cancelar</button>
+            <button class="btn btn-no" ${disabled} onclick="reject('${escapeHtml(o.num)}')">Remover</button>
           </div>
         </article>`;
     }).join('');
@@ -520,7 +520,7 @@ function renderCancelled(orders) {
   btn.classList.toggle('has-items', n > 0);
 
   if (!n) {
-    list.innerHTML = '<div class="cancelled-empty">Nenhum pedido cancelado para recuperar.</div>';
+    list.innerHTML = '<div class="cancelled-empty">Nenhum pedido removido da fila.</div>';
     if (cancelledOpen) panel.classList.add('open');
     else panel.classList.remove('open');
     return;
@@ -617,7 +617,6 @@ async function approve(num) {
 
 async function reject(num) {
   if (busy.has(num)) return;
-  if (!confirm(`Cancelar pedido #${num}?`)) return;
   busy.add(num);
   refresh();
   try {
