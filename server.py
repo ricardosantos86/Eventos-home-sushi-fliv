@@ -1,9 +1,13 @@
 import os
 import json
+import socket
 import threading
+import time
+import subprocess
+import sys
 from datetime import datetime
 from collections import defaultdict
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import win32print
 from PIL import Image
@@ -186,6 +190,13 @@ def build_escpos_estabelecimento(order):
     buf += ESC + b'!\x38'
     buf += esc_line(f"PEDIDO #{order['num']}")
     buf += ESC + b'!\x00'
+    cliente = str(order.get('cliente', '') or '').strip()
+    if cliente:
+        buf += ESC + b'!\x10'
+        buf += ESC + b'E\x01'
+        buf += esc_line(f"CLIENTE #{cliente}")
+        buf += ESC + b'E\x00'
+        buf += ESC + b'!\x00'
     buf += ESC + b'a\x00'
     buf += divider()
 
@@ -256,6 +267,13 @@ def build_escpos_cliente(order):
     buf += ESC + b'!\x38'
     buf += esc_line(f"PEDIDO #{order['num']}")
     buf += ESC + b'!\x00'
+    cliente = str(order.get('cliente', '') or '').strip()
+    if cliente:
+        buf += ESC + b'!\x10'
+        buf += ESC + b'E\x01'
+        buf += esc_line(f"CLIENTE #{cliente}")
+        buf += ESC + b'E\x00'
+        buf += ESC + b'!\x00'
     buf += ESC + b'a\x00'          # esquerda
     buf += divider()
 
@@ -416,7 +434,141 @@ def build_escpos_daily_report(date_str, orders):
     return bytes(buf)
 
 
+def build_escpos_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO'):
+    """Papel de controlo — espelha o que se vê no monitor."""
+    buf = bytearray()
+    buf += ESC + b'@'
+    buf += CODEPAGE_CP858
+
+    # Cabeçalho
+    buf += ESC + b'a\x01'
+    buf += ESC + b'E\x01'
+    buf += esc_line(titulo)
+    buf += ESC + b'E\x00'
+    buf += esc_line(f"{order.get('date', '')}  {order.get('time', '')}")
+    buf += divider()
+
+    # Pedido (grande)
+    buf += ESC + b'!\x38'
+    buf += esc_line(f"PEDIDO #{order['num']}")
+    buf += ESC + b'!\x00'
+
+    # Cliente (destaque)
+    cliente = str(order.get('cliente', '') or '').strip()
+    if cliente:
+        buf += ESC + b'!\x20'
+        buf += ESC + b'E\x01'
+        buf += esc_line(f"CLIENTE #{cliente}")
+        buf += ESC + b'E\x00'
+        buf += ESC + b'!\x00'
+    else:
+        buf += esc_line('CLIENTE #—')
+
+    buf += ESC + b'a\x00'
+    buf += divider()
+
+    # Itens
+    COL_QTY  = 4
+    COL_NAME = W - COL_QTY - 2
+    for item in order.get('lines', []):
+        qty_s = f"{int(item.get('qty', 0) or 0)}x"
+        name  = str(item.get('name', ''))[:COL_NAME]
+        buf += esc_line(f"{qty_s:<{COL_QTY}}  {name}")
+
+    buf += divider()
+
+    # Observações
+    obs = str(order.get('obs', '') or '').strip()
+    if obs:
+        buf += ESC + b'E\x01'
+        buf += esc_line('OBS:')
+        buf += ESC + b'E\x00'
+        buf = _obs_lines(buf, obs)
+        buf += divider()
+
+    # Pagamento + total (como no monitor)
+    pagamento = str(order.get('pagamento', '') or '').strip()
+    total = float(order.get('total', 0) or 0)
+    total_s = f"{total:.2f}".replace('.', ',') + '€'
+    meta = f"{pagamento} · {total_s}" if pagamento else total_s
+    buf += ESC + b'a\x01'
+    buf += ESC + b'!\x10'
+    buf += esc_line(meta)
+    buf += ESC + b'!\x00'
+    buf += b'\n'
+    if rodape:
+        buf += ESC + b'E\x01'
+        buf += esc_line(rodape)
+        buf += ESC + b'E\x00'
+    buf += b'\n\n\n'
+    buf += GS + b'V\x41\x03'
+    return bytes(buf)
+
+
+# ── Rede / páginas ────────────────────────────────────────────────────────────
+
+def get_lan_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return None
+
+
+def find_order_index(history, num):
+    num = str(num)
+    return next((i for i, o in enumerate(history) if str(o.get('num', '')) == num), None)
+
+
+def print_order_copies(order):
+    cfg = load_config()
+    printer_name = cfg.get('printer', '')
+    if not printer_name:
+        raise ValueError('NO_PRINTER')
+    # Garante tipos numéricos (histórico pode ter total em string)
+    order = dict(order)
+    order['total'] = float(order.get('total', 0) or 0)
+    for line in order.get('lines', []):
+        line['qty'] = int(line.get('qty', 0) or 0)
+        line['price'] = float(line.get('price', 0) or 0)
+    copy1 = build_escpos_estabelecimento(order)
+    copy2 = build_escpos_cliente(order)
+    raw_print(printer_name, copy1 + copy2)
+
+
+def print_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO'):
+    """Imprime um papel de controlo."""
+    cfg = load_config()
+    printer_name = cfg.get('printer', '')
+    if not printer_name:
+        raise ValueError('NO_PRINTER')
+    order = dict(order)
+    order['total'] = float(order.get('total', 0) or 0)
+    for line in order.get('lines', []):
+        line['qty'] = int(line.get('qty', 0) or 0)
+        line['price'] = float(line.get('price', 0) or 0)
+    raw_print(printer_name, build_escpos_controlo(order, titulo=titulo, rodape=rodape))
+
+
 # ── Rotas API ─────────────────────────────────────────────────────────────────
+
+@app.route('/')
+def index():
+    return send_from_directory(BASE_DIR, 'home_sushi_pos.html')
+
+
+@app.route('/monitor')
+def monitor_page():
+    return send_from_directory(BASE_DIR, 'monitor.html')
+
+
+@app.route('/logo.png')
+def serve_logo():
+    return send_from_directory(BASE_DIR, 'logo.png')
+
 
 @app.route('/health')
 def health():
@@ -470,15 +622,21 @@ def finalize_order():
         'num':            num,
         'date':           order.get('date', ''),
         'time':           order.get('time', ''),
+        'cliente':        str(order.get('cliente', '') or '').strip(),
         'obs':            order.get('obs', ''),
         'lines':          order.get('lines', []),
         'total':          order.get('total', 0),
         'pagamento':      order.get('pagamento', ''),
         'valor_entregue': order.get('valor_entregue', 0),
         'troco':          order.get('troco', 0),
+        'status':         'pendente' if order.get('toMonitor', True) else 'registado',
     }
+    # Permite override explícito (pendente | registado)
+    status_in = str(order.get('status', '') or '').strip().lower()
+    if status_in in ('pendente', 'registado'):
+        entry['status'] = status_in
     if is_edit:
-        idx = next((i for i, o in enumerate(history) if o.get('num') == num), None)
+        idx = find_order_index(history, num)
         if idx is not None:
             history[idx] = entry
         else:
@@ -489,7 +647,30 @@ def finalize_order():
             order_counter += 1
 
     save_history(history)
-    return jsonify({'ok': True, 'num': num})
+
+    printed = False
+    print_error = None
+    # Ao enviar para o monitor, imprime papel de controlo para o cliente
+    if entry['status'] == 'pendente':
+        try:
+            print_controlo(
+                entry,
+                titulo='CONTROLO CLIENTE',
+                rodape='Apresente este talao',
+            )
+            printed = True
+        except ValueError as e:
+            print_error = str(e)
+        except Exception as e:
+            print_error = str(e)
+
+    return jsonify({
+        'ok': True,
+        'num': num,
+        'status': entry['status'],
+        'printed': printed,
+        'print_error': print_error,
+    })
 
 
 @app.route('/api/print', methods=['POST'])
@@ -499,11 +680,6 @@ def print_order():
     if not order:
         return jsonify({'ok': False, 'error': 'Dados inválidos'}), 400
 
-    cfg = load_config()
-    printer_name = cfg.get('printer', '')
-    if not printer_name:
-        return jsonify({'ok': False, 'error': 'NO_PRINTER'}), 400
-
     edit_num = order.get('editNum')
     is_edit  = bool(edit_num)
 
@@ -512,27 +688,31 @@ def print_order():
     order['num'] = num
 
     try:
-        copy1 = build_escpos_estabelecimento(order)
-        copy2 = build_escpos_cliente(order)
-        raw_print(printer_name, copy1 + copy2)
+        print_order_copies(order)
+    except ValueError as e:
+        if str(e) == 'NO_PRINTER':
+            return jsonify({'ok': False, 'error': 'NO_PRINTER'}), 400
+        return jsonify({'ok': False, 'error': str(e)}), 500
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 500
 
-    # Guarda no histórico
+    # Guarda no histórico (impressão directa — não passa pelo monitor)
     history = load_history()
     entry = {
         'num':            num,
         'date':           order.get('date', ''),
         'time':           order.get('time', ''),
+        'cliente':        str(order.get('cliente', '') or '').strip(),
         'obs':            order.get('obs', ''),
         'lines':          order.get('lines', []),
         'total':          order.get('total', 0),
         'pagamento':      order.get('pagamento', ''),
         'valor_entregue': order.get('valor_entregue', 0),
         'troco':          order.get('troco', 0),
+        'status':         'impresso',
     }
     if is_edit:
-        idx = next((i for i, o in enumerate(history) if o.get('num') == num), None)
+        idx = find_order_index(history, num)
         if idx is not None:
             history[idx] = entry
         else:
@@ -543,7 +723,95 @@ def print_order():
             order_counter += 1
 
     save_history(history)
-    return jsonify({'ok': True, 'num': num})
+    return jsonify({'ok': True, 'num': num, 'status': 'impresso'})
+
+
+@app.route('/api/queue')
+def get_queue():
+    history = load_history()
+    pending = [o for o in history if o.get('status') == 'pendente']
+    pending.sort(key=lambda o: int(o.get('num', 0) or 0))
+    cancelled = [o for o in history if o.get('status') == 'rejeitado']
+    cancelled.sort(key=lambda o: int(o.get('num', 0) or 0), reverse=True)
+    return jsonify({
+        'queue': pending,
+        'count': len(pending),
+        'cancelled': cancelled[:30],
+        'cancelled_count': len(cancelled),
+    })
+
+
+@app.route('/api/queue/approve', methods=['POST'])
+def approve_queue_order():
+    payload = request.get_json() or {}
+    num = str(payload.get('num', '')).strip()
+    if not num:
+        return jsonify({'ok': False, 'error': 'Numero em falta'}), 400
+
+    with counter_lock:
+        history = load_history()
+        idx = find_order_index(history, num)
+        if idx is None:
+            return jsonify({'ok': False, 'error': 'Pedido nao encontrado'}), 404
+        order = history[idx]
+        if order.get('status') != 'pendente':
+            return jsonify({'ok': False, 'error': 'Pedido ja processado'}), 409
+
+        try:
+            print_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO')
+        except ValueError as e:
+            if str(e) == 'NO_PRINTER':
+                return jsonify({'ok': False, 'error': 'NO_PRINTER'}), 400
+            return jsonify({'ok': False, 'error': str(e)}), 500
+        except Exception as e:
+            return jsonify({'ok': False, 'error': str(e)}), 500
+
+        history[idx]['status'] = 'impresso'
+        save_history(history)
+
+    return jsonify({'ok': True, 'num': num, 'status': 'impresso'})
+
+
+@app.route('/api/queue/reject', methods=['POST'])
+def reject_queue_order():
+    payload = request.get_json() or {}
+    num = str(payload.get('num', '')).strip()
+    if not num:
+        return jsonify({'ok': False, 'error': 'Numero em falta'}), 400
+
+    with counter_lock:
+        history = load_history()
+        idx = find_order_index(history, num)
+        if idx is None:
+            return jsonify({'ok': False, 'error': 'Pedido nao encontrado'}), 404
+        if history[idx].get('status') != 'pendente':
+            return jsonify({'ok': False, 'error': 'Pedido ja processado'}), 409
+
+        history[idx]['status'] = 'rejeitado'
+        save_history(history)
+
+    return jsonify({'ok': True, 'num': num, 'status': 'rejeitado'})
+
+
+@app.route('/api/queue/restore', methods=['POST'])
+def restore_queue_order():
+    payload = request.get_json() or {}
+    num = str(payload.get('num', '')).strip()
+    if not num:
+        return jsonify({'ok': False, 'error': 'Numero em falta'}), 400
+
+    with counter_lock:
+        history = load_history()
+        idx = find_order_index(history, num)
+        if idx is None:
+            return jsonify({'ok': False, 'error': 'Pedido nao encontrado'}), 404
+        if history[idx].get('status') != 'rejeitado':
+            return jsonify({'ok': False, 'error': 'So pedidos cancelados podem ser recuperados'}), 409
+
+        history[idx]['status'] = 'pendente'
+        save_history(history)
+
+    return jsonify({'ok': True, 'num': num, 'status': 'pendente'})
 
 
 @app.route('/api/delete', methods=['POST'])
@@ -592,9 +860,84 @@ def print_daily_report():
     })
 
 
+@app.route('/api/shutdown', methods=['POST'])
+def shutdown():
+    """Encerra servidor, CMDs e janelas do browser do POS/Monitor."""
+    def kill_and_exit():
+        time.sleep(0.35)
+        flags = 0x08000000 if sys.platform == 'win32' else 0  # CREATE_NO_WINDOW
+        base = BASE_DIR.replace('\\', '\\\\')
+
+        # 1) PIDs gravados no arranque
+        for name in ('.pos_launcher.pid', '.pos_server.pid'):
+            path = os.path.join(BASE_DIR, name)
+            try:
+                with open(path, encoding='utf-8') as f:
+                    pid = int(f.read().strip())
+                if pid and pid != os.getpid():
+                    subprocess.run(
+                        ['taskkill', '/F', '/T', '/PID', str(pid)],
+                        capture_output=True, creationflags=flags
+                    )
+            except Exception:
+                pass
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+
+        # 2) PowerShell: fechar browsers do POS + CMDs + python server.py
+        ps = f'''
+$ErrorActionPreference = 'SilentlyContinue'
+Get-Process chrome,msedge,brave,firefox -ErrorAction SilentlyContinue | ForEach-Object {{
+  $t = $_.MainWindowTitle
+  if ($t -and ($t -match 'Home Sushi|Monitor de Pedidos|HOME SUSHI')) {{
+    try {{ [void]$_.CloseMainWindow() }} catch {{}}
+  }}
+}}
+Start-Sleep -Milliseconds 500
+Get-Process cmd,powershell,WindowsTerminal -ErrorAction SilentlyContinue | ForEach-Object {{
+  $t = $_.MainWindowTitle
+  if ($t -and ($t -match 'HOME SUSHI POS|HOME SUSHI Servidor')) {{
+    try {{ Stop-Process -Id $_.Id -Force }} catch {{}}
+  }}
+}}
+Get-CimInstance Win32_Process | Where-Object {{
+  $_.Name -match '^python' -and $_.CommandLine -and ($_.CommandLine -like '*server.py*') -and ($_.CommandLine -like '*{base}*')
+}} | ForEach-Object {{
+  try {{ Stop-Process -Id $_.ProcessId -Force }} catch {{}}
+}}
+taskkill /F /FI "WINDOWTITLE eq HOME SUSHI POS*" 2>$null | Out-Null
+taskkill /F /FI "WINDOWTITLE eq HOME SUSHI Servidor*" 2>$null | Out-Null
+'''
+        try:
+            subprocess.run(
+                ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps],
+                capture_output=True, creationflags=flags, timeout=8
+            )
+        except Exception:
+            pass
+
+        os._exit(0)
+
+    threading.Thread(target=kill_and_exit, daemon=True).start()
+    return jsonify({'ok': True})
+
+
 if __name__ == '__main__':
+    # Grava PID para o SAIR conseguir encerrar tudo
+    try:
+        with open(os.path.join(BASE_DIR, '.pos_server.pid'), 'w', encoding='utf-8') as f:
+            f.write(str(os.getpid()))
+    except Exception:
+        pass
+
+    lan_ip = get_lan_ip()
     print('=' * 46)
     print('  HOME SUSHI POS — Servidor de impressão')
-    print('  http://localhost:5000')
+    print('  POS:     http://localhost:5000')
+    print('  Monitor: http://localhost:5000/monitor')
+    if lan_ip:
+        print(f'  Rede:    http://{lan_ip}:5000/monitor')
     print('=' * 46)
-    app.run(host='localhost', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False)

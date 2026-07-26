@@ -8,6 +8,11 @@ echo   HOME SUSHI POS - A iniciar...
 echo  ==========================================
 echo.
 
+:: Grava PID desta janela CMD (para o botao SAIR fechar)
+for /f %%i in ('powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \"ProcessId=$PID\").ParentProcessId"') do (
+  echo %%i> "%~dp0.pos_launcher.pid"
+)
+
 :: Verifica Python
 python --version >nul 2>&1
 if errorlevel 1 (
@@ -38,21 +43,43 @@ start "HOME SUSHI Servidor" /min python server.py
 :: Aguarda arranque
 timeout /t 3 /nobreak >nul
 
-:: Abre no Chrome (ou browser padrao se nao encontrar)
-echo  A abrir POS no browser...
-set "FILE=%~dp0home_sushi_pos.html"
+:: Abre POS e Monitor em janelas app (mais faceis de fechar com SAIR)
+echo  A abrir POS e Monitor no browser...
 set "CHROME=%ProgramFiles%\Google\Chrome\Application\chrome.exe"
 set "CHROME86=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
+set "EDGE=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
+set "EDGE64=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
+set "POS_URL=http://127.0.0.1:5000/"
+set "MON_URL=http://127.0.0.1:5000/monitor"
+
 if exist "%CHROME%" (
-    start "" "%CHROME%" "%FILE%"
+    start "" "%CHROME%" --new-window --app="%POS_URL%"
+    start "" "%CHROME%" --new-window --app="%MON_URL%"
 ) else if exist "%CHROME86%" (
-    start "" "%CHROME86%" "%FILE%"
+    start "" "%CHROME86%" --new-window --app="%POS_URL%"
+    start "" "%CHROME86%" --new-window --app="%MON_URL%"
+) else if exist "%EDGE64%" (
+    start "" "%EDGE64%" --new-window --app="%POS_URL%"
+    start "" "%EDGE64%" --new-window --app="%MON_URL%"
+) else if exist "%EDGE%" (
+    start "" "%EDGE%" --new-window --app="%POS_URL%"
+    start "" "%EDGE%" --new-window --app="%MON_URL%"
 ) else (
-    start "" "%FILE%"
+    start "" "%POS_URL%"
+    start "" "%MON_URL%"
 )
 
 echo.
-echo  POS ativo em http://localhost:5000
-echo  Nao feches esta janela.
+echo  POS:     http://127.0.0.1:5000
+echo  Monitor: http://127.0.0.1:5000/monitor
+echo.
+echo  Noutro dispositivo na mesma rede Wi-Fi:
+echo  abre http://IP-DESTE-PC:5000/monitor
+echo  (o IP aparece na janela do servidor)
+echo.
+echo  NAO abras os ficheiros .html diretamente.
+echo  Usa sempre os links http:// acima.
+echo.
+echo  Para fechar tudo: botao SAIR no POS ou Monitor.
 echo.
 pause

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Sushi — Monitor de Pedidos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #111111;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: rgba(255,255,255,0.08);
+    --accent: #c41230;
+    --ok: #2f9e5a;
+    --ok-hover: #268a4c;
+    --no: #c41230;
+    --no-hover: #a30f28;
+    --text: #f5f4f1;
+    --text-muted: #aaa;
+    --text-dim: #666;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    border-bottom: 2px solid var(--accent);
+    background: #0a0a0a;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-mark {
+    height: 34px;
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border-radius: 6px;
+    padding: 3px 8px;
+  }
+  .logo-mark img { height: 28px; width: auto; display: block; }
+  .title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .subtitle {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .server-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .server-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+  }
+  .server-dot.online  { background: var(--ok); }
+  .server-dot.offline { background: var(--no); }
+
+  .queue-count {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 10px;
+    color: var(--text);
+  }
+  .queue-count strong { color: var(--accent); }
+
+  .btn-sair {
+    background: transparent;
+    color: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .btn-sair:hover {
+    background: var(--no);
+    color: #fff;
+    border-color: var(--no);
+  }
+
+  .btn-recuperar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1e3a5f;
+    color: #93c5fd;
+    border: 1px solid #2563eb;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .btn-recuperar:hover { background: #2563eb; color: #fff; }
+  .btn-recuperar.has-items {
+    background: #2563eb;
+    color: #fff;
+    animation: pulseRec 1.6s ease-in-out infinite;
+  }
+  .btn-recuperar .badge {
+    background: #fff;
+    color: #1d4ed8;
+    font-weight: 700;
+    border-radius: 999px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+  }
+  @keyframes pulseRec {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45); }
+    50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+  }
+
+  .recover-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(520px, calc(100vw - 24px));
+    max-height: 50vh;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+    z-index: 50;
+  }
+  .recover-panel.open { display: flex; flex-direction: column; }
+  .recover-panel-head {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .recover-wrap {
+    position: relative;
+  }
+  .cancelled-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    overflow-y: auto;
+    max-height: calc(50vh - 42px);
+  }
+  .cancelled-empty {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    padding: 12px 6px;
+    text-align: center;
+  }
+  .cancelled-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .cancelled-row .c-num { font-weight: 700; min-width: 72px; }
+  .cancelled-row .c-cli {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-weight: 600;
+    min-width: 70px;
+  }
+  .cancelled-row .c-info {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .btn-restore {
+    background: #3b82f6;
+    font-size: 12px;
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
+  .btn-restore:hover:not(:disabled) { background: #2563eb; }
+
+  main {
+    flex: 1;
+    padding: 14px 16px 20px;
+    overflow-y: auto;
+  }
+
+  .empty {
+    grid-column: 1 / -1;
+    padding: 10vh 0;
+    text-align: center;
+    color: var(--text-dim);
+  }
+  .empty h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .empty p {
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  /* Grelha auto-ajustável: ~3 colunas no desktop, 2/1 em ecrãs menores */
+  .queue {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+    align-content: start;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .card-num {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .card-cliente {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(196, 18, 48, 0.15);
+    border: 1px solid rgba(196, 18, 48, 0.35);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: var(--mono);
+  }
+  .card-cliente .lbl {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .card-cliente.missing {
+    background: var(--surface2);
+    border-color: var(--border);
+    color: var(--text-dim);
+  }
+  .card-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .lines {
+    list-style: none;
+    flex: 1;
+  }
+  .lines li {
+    display: flex;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 2px 0;
+    line-height: 1.25;
+  }
+  .lines .qty {
+    font-family: var(--mono);
+    color: var(--accent);
+    min-width: 28px;
+    flex-shrink: 0;
+  }
+
+  .obs {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border-radius: 4px;
+    padding: 5px 7px;
+  }
+  .obs strong { color: var(--text); }
+
+  .pay {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: auto;
+  }
+  .btn {
+    border: none;
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 10px 8px;
+    color: #fff;
+    transition: background 0.15s, opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .btn-ok { background: var(--ok); }
+  .btn-ok:hover:not(:disabled) { background: var(--ok-hover); }
+  .btn-no { background: var(--no); }
+  .btn-no:hover:not(:disabled) { background: var(--no-hover); }
+
+  @media (min-width: 1100px) {
+    .queue {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  @media (max-width: 700px) {
+    .queue {
+      grid-template-columns: 1fr;
+    }
+    header { padding: 10px 12px; }
+    main { padding: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <img src="/logo.png" alt="HOME Sushi"
+           onerror="this.style.display='none'">
+    </div>
+    <div>
+      <div class="title">Monitor de Pedidos</div>
+      <div class="subtitle">Fila por ordem de chegada</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="queue-count"><strong id="count">0</strong> pendente(s)</div>
+    <div class="recover-wrap">
+      <button class="btn-recuperar" id="btn-recuperar" onclick="toggleCancelled()" title="Pedidos cancelados">
+        RECUPERAR <span class="badge" id="cancelled-count">0</span>
+      </button>
+      <div class="recover-panel" id="recover-panel">
+        <div class="recover-panel-head">Pedidos cancelados</div>
+        <div id="cancelled-list" class="cancelled-list"></div>
+      </div>
+    </div>
+    <div id="clock">—</div>
+    <div class="server-status">
+      <div class="server-dot" id="server-dot"></div>
+      <span id="server-label">a ligar...</span>
+    </div>
+    <button class="btn-sair" onclick="sairTudo()" title="Fechar POS, monitor e servidor">SAIR</button>
+  </div>
+</header>
+
+<main>
+  <div id="queue" class="queue"></div>
+</main>
+
+<script>
+const SERVER = (location.protocol === 'http:' || location.protocol === 'https:')
+  ? location.origin
+  : 'http://127.0.0.1:5000';
+
+if (location.protocol === 'file:') {
+  location.replace('http://127.0.0.1:5000/monitor');
+}
+
+let busy = new Set();
+let apiRoot = SERVER;
+let cancelledOpen = false;
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' }) +
+    ' · ' +
+    now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function money(v) {
+  return parseFloat(v || 0).toFixed(2).replace('.', ',') + ' €';
+}
+
+function setOnline(ok) {
+  const dot = document.getElementById('server-dot');
+  const label = document.getElementById('server-label');
+  if (ok) {
+    dot.className = 'server-dot online';
+    label.textContent = 'ligado';
+  } else {
+    dot.className = 'server-dot offline';
+    label.textContent = 'offline';
+  }
+}
+
+function renderQueue(orders) {
+  const el = document.getElementById('queue');
+  document.getElementById('count').textContent = String(orders.length);
+
+  if (!orders.length) {
+    el.innerHTML = `
+      <div class="empty">
+        <h2>Sem pedidos pendentes</h2>
+        <p>À espera de novos pedidos da caixa…</p>
+      </div>`;
+  } else {
+    el.innerHTML = orders.map(o => {
+      const lines = (o.lines || []).map(l => `
+        <li><span class="qty">${l.qty}x</span><span>${l.name}</span></li>
+      `).join('');
+      const clienteVal = String(o.cliente ?? o.num_cliente ?? o.clienteNum ?? '').trim();
+      const cliente = clienteVal
+        ? `<div class="card-cliente"><span class="lbl">Cliente</span>#${escapeHtml(clienteVal)}</div>`
+        : `<div class="card-cliente missing"><span class="lbl">Cliente</span>—</div>`;
+      const obs = String(o.obs ?? '').trim()
+        ? `<div class="obs"><strong>OBS:</strong> ${escapeHtml(o.obs)}</div>`
+        : '';
+      const disabled = busy.has(String(o.num)) ? 'disabled' : '';
+
+      return `
+        <article class="card" data-num="${escapeHtml(o.num)}">
+          <div class="card-top">
+            <div class="card-num">Pedido #${escapeHtml(o.num)}</div>
+          </div>
+          ${cliente}
+          <div class="card-meta">${escapeHtml(o.time || '')}${o.pagamento ? ' · ' + escapeHtml(o.pagamento) : ''} · ${money(o.total)}</div>
+          <ul class="lines">${lines}</ul>
+          ${obs}
+          <div class="actions">
+            <button class="btn btn-ok" ${disabled} onclick="approve('${escapeHtml(o.num)}')">Concluído</button>
+            <button class="btn btn-no" ${disabled} onclick="reject('${escapeHtml(o.num)}')">Cancelar</button>
+          </div>
+        </article>`;
+    }).join('');
+  }
+}
+
+function renderCancelled(orders) {
+  const list = document.getElementById('cancelled-list');
+  const countEl = document.getElementById('cancelled-count');
+  const btn = document.getElementById('btn-recuperar');
+  const panel = document.getElementById('recover-panel');
+  const n = (orders || []).length;
+  countEl.textContent = String(n);
+  btn.classList.toggle('has-items', n > 0);
+
+  if (!n) {
+    list.innerHTML = '<div class="cancelled-empty">Nenhum pedido cancelado para recuperar.</div>';
+    if (cancelledOpen) panel.classList.add('open');
+    else panel.classList.remove('open');
+    return;
+  }
+
+  list.innerHTML = orders.map(o => {
+    const clienteVal = String(o.cliente ?? '').trim();
+    const items = (o.lines || []).map(l => `${l.qty}x ${l.name}`).join(', ');
+    const disabled = busy.has(String(o.num)) ? 'disabled' : '';
+    return `
+      <div class="cancelled-row">
+        <span class="c-num">#${escapeHtml(o.num)}</span>
+        <span class="c-cli">${clienteVal ? 'Cli #' + escapeHtml(clienteVal) : '—'}</span>
+        <span class="c-info">${escapeHtml(o.time || '')} · ${escapeHtml(items)}</span>
+        <button class="btn btn-restore" ${disabled} onclick="event.stopPropagation(); restore('${escapeHtml(o.num)}')">Recuperar</button>
+      </div>`;
+  }).join('');
+
+  panel.classList.toggle('open', cancelledOpen);
+}
+
+function toggleCancelled() {
+  cancelledOpen = !cancelledOpen;
+  document.getElementById('recover-panel').classList.toggle('open', cancelledOpen);
+}
+
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.recover-wrap');
+  if (!wrap || wrap.contains(e.target)) return;
+  if (cancelledOpen) {
+    cancelledOpen = false;
+    document.getElementById('recover-panel').classList.remove('open');
+  }
+});
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+async function refresh() {
+  const urls = [
+    apiRoot + '/api/queue',
+    'http://127.0.0.1:5000/api/queue',
+    'http://localhost:5000/api/queue',
+  ];
+  const tried = new Set();
+  for (const url of urls) {
+    if (tried.has(url)) continue;
+    tried.add(url);
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(3000) });
+      if (!r.ok) continue;
+      const data = await r.json();
+      setOnline(true);
+      if (url.startsWith('http://127.0.0.1')) apiRoot = 'http://127.0.0.1:5000';
+      else if (url.startsWith('http://localhost')) apiRoot = 'http://localhost:5000';
+      else apiRoot = SERVER;
+      renderQueue(data.queue || []);
+      renderCancelled(data.cancelled || []);
+      return;
+    } catch { /* tenta seguinte */ }
+  }
+  setOnline(false);
+}
+
+async function approve(num) {
+  if (busy.has(num)) return;
+  busy.add(num);
+  refresh();
+  try {
+    const r = await fetch(apiRoot + '/api/queue/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ num }),
+    });
+    const data = await r.json();
+    if (!data.ok) {
+      alert('Erro ao imprimir: ' + (data.error === 'NO_PRINTER'
+        ? 'Impressora não configurada no POS'
+        : (data.error || r.status)));
+    }
+  } catch (e) {
+    alert('Erro de rede: ' + e.message);
+  } finally {
+    busy.delete(num);
+    refresh();
+  }
+}
+
+async function reject(num) {
+  if (busy.has(num)) return;
+  if (!confirm(`Cancelar pedido #${num}?`)) return;
+  busy.add(num);
+  refresh();
+  try {
+    const r = await fetch(apiRoot + '/api/queue/reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ num }),
+    });
+    const data = await r.json();
+    if (!data.ok) alert('Erro: ' + (data.error || r.status));
+  } catch (e) {
+    alert('Erro de rede: ' + e.message);
+  } finally {
+    busy.delete(num);
+    refresh();
+  }
+}
+
+async function restore(num) {
+  if (busy.has(num)) return;
+  busy.add(num);
+  refresh();
+  try {
+    const r = await fetch(apiRoot + '/api/queue/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ num }),
+    });
+    const data = await r.json();
+    if (!data.ok) alert('Erro ao recuperar: ' + (data.error || r.status));
+    else {
+      cancelledOpen = true;
+      document.getElementById('recover-panel').classList.add('open');
+    }
+  } catch (e) {
+    alert('Erro de rede: ' + e.message);
+  } finally {
+    busy.delete(num);
+    refresh();
+  }
+}
+
+async function sairTudo() {
+  if (!confirm('Fechar tudo?\n\nIsto encerra o servidor, as janelas CMD e as janelas do POS/Monitor.')) return;
+  try {
+    await fetch(apiRoot + '/api/shutdown', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      signal: AbortSignal.timeout(2500),
+    });
+  } catch { /* servidor a fechar */ }
+  document.body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;
+                font-family:Syne,sans-serif;background:#111;color:#eee;text-align:center;padding:24px;">
+      <div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:8px;">Sistema encerrado</div>
+        <div style="font-family:DM Mono,monospace;font-size:12px;color:#888;">A fechar janelas…</div>
+      </div>
+    </div>`;
+  setTimeout(() => { try { window.close(); } catch {} }, 300);
+}
+
+updateClock();
+setInterval(updateClock, 1000);
+refresh();
+setInterval(refresh, 1500);
+</script>
+</body>
+</html>
