@@ -53,21 +53,27 @@ set "POS_URL=http://127.0.0.1:5000/"
 set "MON_URL=http://127.0.0.1:5000/monitor"
 
 if exist "%CHROME%" (
-    start "" "%CHROME%" --new-window --app="%POS_URL%"
-    start "" "%CHROME%" --new-window --app="%MON_URL%"
+    start "HOME SUSHI POS" /MAX "%CHROME%" --new-window --start-maximized --app="%POS_URL%"
+    start "HOME SUSHI Monitor" /MAX "%CHROME%" --new-window --start-maximized --app="%MON_URL%"
 ) else if exist "%CHROME86%" (
-    start "" "%CHROME86%" --new-window --app="%POS_URL%"
-    start "" "%CHROME86%" --new-window --app="%MON_URL%"
+    start "HOME SUSHI POS" /MAX "%CHROME86%" --new-window --start-maximized --app="%POS_URL%"
+    start "HOME SUSHI Monitor" /MAX "%CHROME86%" --new-window --start-maximized --app="%MON_URL%"
 ) else if exist "%EDGE64%" (
-    start "" "%EDGE64%" --new-window --app="%POS_URL%"
-    start "" "%EDGE64%" --new-window --app="%MON_URL%"
+    start "HOME SUSHI POS" /MAX "%EDGE64%" --new-window --start-maximized --app="%POS_URL%"
+    start "HOME SUSHI Monitor" /MAX "%EDGE64%" --new-window --start-maximized --app="%MON_URL%"
 ) else if exist "%EDGE%" (
-    start "" "%EDGE%" --new-window --app="%POS_URL%"
-    start "" "%EDGE%" --new-window --app="%MON_URL%"
+    start "HOME SUSHI POS" /MAX "%EDGE%" --new-window --start-maximized --app="%POS_URL%"
+    start "HOME SUSHI Monitor" /MAX "%EDGE%" --new-window --start-maximized --app="%MON_URL%"
 ) else (
-    start "" "%POS_URL%"
-    start "" "%MON_URL%"
+    start "HOME SUSHI POS" /MAX "%POS_URL%"
+    start "HOME SUSHI Monitor" /MAX "%MON_URL%"
 )
+
+:: Garante maximizar as janelas app (Chrome/Edge por vezes ignoram /MAX com --app)
+timeout /t 2 /nobreak >nul
+powershell -NoProfile -Command ^
+  "Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;public class W{[DllImport(\"user32.dll\")]public static extern bool ShowWindowAsync(IntPtr h,int c);}'; ^
+  "Get-Process chrome,msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 -and ($_.MainWindowTitle -match 'Home Sushi|NEXO|Monitor') } | ForEach-Object { [void][W]::ShowWindowAsync($_.MainWindowHandle,3) }"
 
 echo.
 echo  POS:     http://127.0.0.1:5000

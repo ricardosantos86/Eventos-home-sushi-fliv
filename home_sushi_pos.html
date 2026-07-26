@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home Sushi Viseu — POS</title>
+<title>Home Sushi — NEXO · POS</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -68,6 +68,24 @@
     font-weight: 700;
     letter-spacing: 0.02em;
     color: #ffffff;
+  }
+  .logo-event {
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #ffffff;
+    line-height: 1.1;
+  }
+  .logo-event-wrap {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin-left: 6px !important;
+    transition: background 0.15s;
+  }
+  .logo-event-wrap:hover {
+    background: rgba(255,255,255,0.08);
   }
   .logo-sub {
     font-family: var(--mono);
@@ -586,6 +604,79 @@
     appearance: none;
     cursor: pointer;
   }
+  .modal input[type="text"],
+  .modal input[type="url"],
+  .modal input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 14px;
+    box-sizing: border-box;
+  }
+  .modal input:focus { outline: none; border-color: var(--accent); }
+  .modal-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .modal-check input { width: auto; margin: 0; }
+  .modal-hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.45;
+    margin: -8px 0 14px;
+  }
+  .bridge-status-box {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .bridge-status-box .ok { color: #15803d; }
+  .bridge-status-box .err { color: var(--red); }
+  .modal.wide { width: 440px; max-width: calc(100vw - 32px); }
+  .btn-bridge {
+    margin-left: 10px;
+    background: transparent;
+    color: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .btn-bridge:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .btn-bridge.on { border-color: #3b82f6; color: #93c5fd; }
+  .btn-bridge .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #666;
+  }
+  .btn-bridge.on .dot { background: #3b82f6; }
+  .btn-bridge.err .dot { background: var(--red); }
   .modal-actions { display: flex; gap: 8px; }
   .btn-modal-save {
     flex: 1; padding: 11px;
@@ -772,8 +863,9 @@
            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
       <span class="logo-fallback" style="display:none;">HOME SUSHI</span>
     </div>
-    <div style="margin-left:12px;">
-      <div class="logo-sub">Sistema de Pedidos · Viseu</div>
+    <div style="margin-left:12px;" class="logo-event-wrap" onclick="openEventoModal()" title="Alterar nome do evento">
+      <div class="logo-event" id="logo-event">NEXO</div>
+      <div class="logo-sub" id="logo-sub">Julho 2026 · Viseu</div>
     </div>
   </div>
   <div style="display:flex; align-items:center;">
@@ -782,6 +874,10 @@
       <div class="server-dot" id="server-dot"></div>
       <span class="server-label" id="server-label">a ligar...</span>
     </div>
+    <button class="btn-bridge" id="btn-bridge" onclick="openBridgeModal()" title="Observar monitor externo">
+      <span class="dot" id="bridge-dot"></span>
+      PONTE
+    </button>
     <button class="btn-sair" onclick="sairTudo()" title="Fechar POS, monitor e servidor">SAIR</button>
   </div>
 </header>
@@ -823,7 +919,7 @@
 
   <!-- HISTÓRICO -->
   <div class="col-historico">
-    <div class="section-label">Histórico</div>
+    <div class="section-label" id="hist-section-label">Histórico · NEXO</div>
     <div class="hist-date-bar">
       <div class="hist-date-toggle" onclick="toggleCalendar()">
         <span class="hist-date-toggle-label" id="hist-date-toggle-label">—</span>
@@ -861,6 +957,25 @@
   </div>
 </div>
 
+<!-- Modal: evento -->
+<div class="modal-backdrop" id="modal-evento">
+  <div class="modal">
+    <h2>Nome do evento</h2>
+    <p class="modal-hint">Aparece no POS e no monitor. Podes mudar quando quiseres.</p>
+    <label>Nome</label>
+    <input type="text" id="evento-nome" placeholder="NEXO" maxlength="40">
+    <label>Detalhe</label>
+    <input type="text" id="evento-detalhe" placeholder="Julho 2026 · Viseu" maxlength="60">
+    <label>Ficheiro do histórico</label>
+    <input type="text" id="evento-ficheiro" placeholder="historico_nexo_julho_2026.json" maxlength="80">
+    <p class="modal-hint">Se mudares o ficheiro, o sistema tenta renomear o JSON na pasta (mantém os pedidos).</p>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeEventoModal()">Cancelar</button>
+      <button class="btn-modal-save" onclick="saveEvento()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: configurar impressora -->
 <div class="modal-backdrop" id="modal-printer">
   <div class="modal">
@@ -872,6 +987,28 @@
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-modal-save" onclick="savePrinter()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: ponte / monitor externo -->
+<div class="modal-backdrop" id="modal-bridge">
+  <div class="modal wide">
+    <h2>Ponte — monitor externo</h2>
+    <p class="modal-hint">Cola o link do monitor do outro sistema (mesma rede). O nosso servidor observa e lança os pedidos novos no nosso monitor.</p>
+    <label class="modal-check">
+      <input type="checkbox" id="bridge-enabled">
+      Observar continuamente
+    </label>
+    <label>URL do monitor deles</label>
+    <input type="url" id="bridge-url" placeholder="http://192.168.x.x:porta/monitor">
+    <label>Intervalo (segundos)</label>
+    <input type="number" id="bridge-interval" min="1" max="60" step="0.5" value="1.5">
+    <p class="modal-hint">No evento recomenda-se 1–2s. Mínimo 1s.</p>
+    <div class="bridge-status-box" id="bridge-status-box">A carregar estado…</div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeBridgeModal()">Fechar</button>
+      <button class="btn-modal-save" onclick="saveBridge()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1139,6 +1276,76 @@ if (location.protocol === 'file:') {
 
 let serverOnline = false;
 let configuredPrinter = '';
+let currentEvento = {
+  nome: 'NEXO',
+  detalhe: 'Julho 2026 · Viseu',
+  ficheiro: 'historico_nexo_julho_2026.json',
+};
+
+function applyEvento(ev) {
+  if (!ev) return;
+  currentEvento = {
+    nome: ev.nome || 'NEXO',
+    detalhe: ev.detalhe || '',
+    ficheiro: ev.ficheiro || currentEvento.ficheiro,
+  };
+  const nome = currentEvento.nome;
+  const detalhe = currentEvento.detalhe;
+  const elNome = document.getElementById('logo-event');
+  const elSub = document.getElementById('logo-sub');
+  const elHist = document.getElementById('hist-section-label');
+  if (elNome) elNome.textContent = nome;
+  if (elSub) elSub.textContent = detalhe || 'Sistema de Pedidos';
+  if (elHist) elHist.textContent = `Histórico · ${nome}`;
+  document.title = `Home Sushi — ${nome} · POS`;
+}
+
+async function openEventoModal() {
+  if (!serverOnline) { alert('Servidor offline'); return; }
+  try {
+    const r = await fetch(apiBase() + '/api/evento', { signal: AbortSignal.timeout(3000) });
+    if (r.ok) {
+      const d = await r.json();
+      if (d.evento) applyEvento(d.evento);
+    }
+  } catch { /* usa currentEvento */ }
+  document.getElementById('evento-nome').value = currentEvento.nome || '';
+  document.getElementById('evento-detalhe').value = currentEvento.detalhe || '';
+  document.getElementById('evento-ficheiro').value = currentEvento.ficheiro || '';
+  document.getElementById('modal-evento').classList.add('open');
+}
+
+function closeEventoModal() {
+  document.getElementById('modal-evento').classList.remove('open');
+}
+
+async function saveEvento() {
+  const nome = document.getElementById('evento-nome').value.trim();
+  const detalhe = document.getElementById('evento-detalhe').value.trim();
+  let ficheiro = document.getElementById('evento-ficheiro').value.trim();
+  if (!nome) { alert('Indica o nome do evento'); return; }
+  if (!ficheiro) ficheiro = currentEvento.ficheiro;
+  try {
+    const r = await fetch(apiBase() + '/api/evento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, detalhe, ficheiro }),
+    });
+    const d = await r.json();
+    if (!d.ok) {
+      alert(d.error || 'Erro ao guardar');
+      return;
+    }
+    applyEvento(d.evento);
+    closeEventoModal();
+  } catch (e) {
+    alert('Erro ao guardar: ' + e.message);
+  }
+}
+
+document.getElementById('modal-evento').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeEventoModal();
+});
 
 async function checkServer() {
   const urls = [
@@ -1157,6 +1364,7 @@ async function checkServer() {
         serverOnline = true;
         configuredPrinter = d.printer || '';
         if (d.counter) orderCounter = d.counter;
+        if (d.evento) applyEvento(d.evento);
         // se ligámos via fallback, fixa o SERVER efetivo
         if (url.startsWith('http://127.0.0.1')) window.__SERVER_BASE = 'http://127.0.0.1:5000';
         else if (url.startsWith('http://localhost')) window.__SERVER_BASE = 'http://localhost:5000';
@@ -1229,7 +1437,7 @@ async function loadHistory() {
   refreshHistoryUI();
 }
 
-checkServer().then(loadHistory);
+checkServer().then(() => { loadHistory(); refreshBridgeStatus(); });
 setInterval(checkServer, 10000);
 
 // ── Modal impressora ────────────────────────────────────────────────────────
@@ -1269,6 +1477,105 @@ async function savePrinter() {
 document.getElementById('modal-printer').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
 });
+
+// ── Ponte monitor externo ────────────────────────────────────────────────────
+
+async function refreshBridgeStatus() {
+  const btn = document.getElementById('btn-bridge');
+  const box = document.getElementById('bridge-status-box');
+  try {
+    const r = await fetch(apiBase() + '/api/bridge', { signal: AbortSignal.timeout(3000) });
+    if (!r.ok) throw new Error('fail');
+    const d = await r.json();
+    const b = d.bridge || {};
+    const s = d.state || {};
+    const on = !!b.enabled && !!(b.url || '').trim();
+
+    btn.classList.toggle('on', on && !s.last_error);
+    btn.classList.toggle('err', on && !!s.last_error);
+
+    if (box) {
+      const lines = [
+        on ? '<span class="ok">Observação ATIVA</span>' : 'Observação desligada',
+        b.url ? `URL: ${escapeHtmlBridge(b.url)}` : 'URL: —',
+        `Intervalo: ${b.interval_sec || 1.5}s`,
+        s.last_ok ? `Último OK: ${escapeHtmlBridge(s.last_ok)}` : '',
+        s.last_error ? `<span class="err">Erro: ${escapeHtmlBridge(s.last_error)}</span>` : '',
+        `Importados: ${s.imported || 0} · Ignorados: ${s.skipped || 0}`,
+      ].filter(Boolean);
+      box.innerHTML = lines.join('<br>');
+    }
+
+    // Preenche campos se o modal estiver aberto
+    const modal = document.getElementById('modal-bridge');
+    if (modal && modal.classList.contains('open')) {
+      document.getElementById('bridge-enabled').checked = !!b.enabled;
+      document.getElementById('bridge-url').value = b.url || '';
+      document.getElementById('bridge-interval').value = b.interval_sec || 1.5;
+    }
+  } catch {
+    btn.classList.remove('on');
+    btn.classList.add('err');
+    if (box) box.innerHTML = '<span class="err">Não foi possível ler o estado da ponte.</span>';
+  }
+}
+
+function escapeHtmlBridge(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function openBridgeModal() {
+  if (!serverOnline) {
+    await checkServer();
+    if (!serverOnline) { alert('Servidor offline.'); return; }
+  }
+  document.getElementById('modal-bridge').classList.add('open');
+  await refreshBridgeStatus();
+}
+
+function closeBridgeModal() {
+  document.getElementById('modal-bridge').classList.remove('open');
+}
+
+async function saveBridge() {
+  const enabled = document.getElementById('bridge-enabled').checked;
+  const url = document.getElementById('bridge-url').value.trim();
+  const interval = parseFloat(document.getElementById('bridge-interval').value || '3');
+
+  if (enabled && !url) {
+    alert('Indica o URL do monitor deles para ativar a observação.');
+    document.getElementById('bridge-url').focus();
+    return;
+  }
+
+  try {
+    const r = await fetch(apiBase() + '/api/bridge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        enabled,
+        url,
+        interval_sec: interval,
+      }),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Erro');
+    await refreshBridgeStatus();
+    closeBridgeModal();
+  } catch (e) {
+    alert('Erro ao guardar ponte: ' + e.message);
+  }
+}
+
+document.getElementById('modal-bridge').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeBridgeModal();
+});
+
+setInterval(refreshBridgeStatus, 5000);
 
 // ── Modal pagamento ──────────────────────────────────────────────────────────
 

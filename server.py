@@ -19,8 +19,19 @@ counter_lock = threading.Lock()
 
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE  = os.path.join(BASE_DIR, 'config.json')
-HISTORY_FILE = os.path.join(BASE_DIR, 'historico.json')
 LOGO_PATH    = os.path.join(BASE_DIR, 'logo.png')
+LEGACY_HISTORY_FILE = os.path.join(BASE_DIR, 'historico.json')
+
+DEFAULT_EVENTO = {
+    'nome': 'NEXO',
+    'detalhe': 'Julho 2026 · Viseu',
+    'ficheiro': 'historico_nexo_julho_2026.json',
+}
+
+try:
+    import bridge as monitor_bridge
+except ImportError:
+    monitor_bridge = None
 
 # ESC/POS constants
 ESC = b'\x1b'
@@ -31,16 +42,68 @@ W   = 42  # chars per line (80mm, Font A)
 CODEPAGE_CP858 = ESC + b't\x13'
 
 
+def load_config():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
+
+def save_config(data):
+    try:
+        cfg = load_config()
+        cfg.update(data)
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+    except IOError as e:
+        print(f'  Erro ao guardar config: {e}')
+
+
+def get_evento(cfg=None):
+    cfg = cfg if cfg is not None else load_config()
+    ev = dict(DEFAULT_EVENTO)
+    ev.update(cfg.get('evento') or {})
+    nome = str(ev.get('nome') or DEFAULT_EVENTO['nome']).strip() or DEFAULT_EVENTO['nome']
+    detalhe = str(ev.get('detalhe') or DEFAULT_EVENTO['detalhe']).strip()
+    ficheiro = str(ev.get('ficheiro') or '').strip()
+    if not ficheiro:
+        slug = ''.join(c if c.isalnum() else '_' for c in nome.lower()).strip('_')
+        ficheiro = f'historico_{slug or "evento"}.json'
+    if not ficheiro.lower().endswith('.json'):
+        ficheiro += '.json'
+    return {'nome': nome, 'detalhe': detalhe, 'ficheiro': ficheiro}
+
+
+def history_path(cfg=None):
+    return os.path.join(BASE_DIR, get_evento(cfg)['ficheiro'])
+
+
+def _ensure_history_file():
+    """Usa ficheiro do evento; migra historico.json antigo se existir."""
+    path = history_path()
+    if os.path.exists(path):
+        return path
+    if os.path.exists(LEGACY_HISTORY_FILE):
+        try:
+            os.replace(LEGACY_HISTORY_FILE, path)
+            print(f'  [historico] migrado historico.json → {os.path.basename(path)}')
+        except OSError:
+            pass
+    return path
+
+
 # ── Histórico & contador ──────────────────────────────────────────────────────
 
 def load_history():
-    if os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, encoding='utf-8') as f:
+    path = _ensure_history_file()
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
             return json.load(f)
     return []
 
 def save_history(history):
-    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+    path = _ensure_history_file()
+    with open(path, 'w', encoding='utf-8') as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
 
 def next_counter():
@@ -58,24 +121,6 @@ def next_counter():
 # inicializa o contador ao arrancar
 order_counter = next_counter()
 print(f'  Último pedido detectado: #{order_counter - 1:04d} — a continuar a partir de #{order_counter:04d}')
-
-
-# ── Config ────────────────────────────────────────────────────────────────────
-
-def load_config():
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, encoding='utf-8') as f:
-            return json.load(f)
-    return {}
-
-def save_config(data):
-    try:
-        cfg = load_config()
-        cfg.update(data)
-        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(cfg, f, ensure_ascii=False, indent=2)
-    except IOError as e:
-        print(f'  Erro ao guardar config: {e}')
 
 
 # ── Impressora ────────────────────────────────────────────────────────────────
@@ -573,7 +618,14 @@ def serve_logo():
 @app.route('/health')
 def health():
     cfg = load_config()
-    return jsonify({'status': 'ok', 'printer': cfg.get('printer', ''), 'counter': order_counter})
+    ev = get_evento(cfg)
+    return jsonify({
+        'status': 'ok',
+        'printer': cfg.get('printer', ''),
+        'counter': order_counter,
+        'evento': ev,
+        'historico_ficheiro': ev['ficheiro'],
+    })
 
 
 @app.route('/api/counter')
@@ -606,10 +658,17 @@ def get_history():
 
 @app.route('/api/finalize', methods=['POST'])
 def finalize_order():
-    global order_counter
     order = request.get_json()
     if not order:
         return jsonify({'ok': False, 'error': 'Dados inválidos'}), 400
+    return jsonify(create_order_entry(order))
+
+
+def create_order_entry(order):
+    """Cria/atualiza pedido no historico. Usado pelo POS e pela ponte externa."""
+    global order_counter
+    if not order:
+        return {'ok': False, 'error': 'Dados inválidos'}
 
     edit_num = order.get('editNum')
     is_edit  = bool(edit_num)
@@ -630,8 +689,13 @@ def finalize_order():
         'valor_entregue': order.get('valor_entregue', 0),
         'troco':          order.get('troco', 0),
         'status':         'pendente' if order.get('toMonitor', True) else 'registado',
+        'source':         order.get('source', 'pos'),
     }
-    # Permite override explícito (pendente | registado)
+    if order.get('external_id'):
+        entry['external_id'] = str(order.get('external_id'))
+    if order.get('bridge_fp'):
+        entry['bridge_fp'] = str(order.get('bridge_fp'))
+
     status_in = str(order.get('status', '') or '').strip().lower()
     if status_in in ('pendente', 'registado'):
         entry['status'] = status_in
@@ -650,8 +714,9 @@ def finalize_order():
 
     printed = False
     print_error = None
-    # Ao enviar para o monitor, imprime papel de controlo para o cliente
-    if entry['status'] == 'pendente':
+    skip_print = bool(order.get('skip_print'))
+    # Ao enviar para o monitor (POS), imprime papel de controlo para o cliente
+    if entry['status'] == 'pendente' and not skip_print:
         try:
             print_controlo(
                 entry,
@@ -664,13 +729,102 @@ def finalize_order():
         except Exception as e:
             print_error = str(e)
 
-    return jsonify({
+    return {
         'ok': True,
         'num': num,
         'status': entry['status'],
         'printed': printed,
         'print_error': print_error,
-    })
+    }
+
+
+@app.route('/api/evento', methods=['GET', 'POST'])
+def api_evento():
+    """Lê / atualiza nome do evento (dashboard)."""
+    if request.method == 'GET':
+        return jsonify({'ok': True, 'evento': get_evento()})
+
+    payload = request.get_json() or {}
+    cfg = load_config()
+    atual = get_evento(cfg)
+    antigo_path = history_path(cfg)
+
+    nome = str(payload.get('nome', atual['nome']) or '').strip() or atual['nome']
+    detalhe = str(payload.get('detalhe', atual['detalhe']) or '').strip()
+    ficheiro = str(payload.get('ficheiro', atual['ficheiro']) or '').strip() or atual['ficheiro']
+    if not ficheiro.lower().endswith('.json'):
+        ficheiro += '.json'
+    # Evita path traversal
+    ficheiro = os.path.basename(ficheiro)
+
+    novo = {'nome': nome, 'detalhe': detalhe, 'ficheiro': ficheiro}
+    cfg['evento'] = novo
+    save_config(cfg)
+
+    novo_path = history_path(cfg)
+    renamed = False
+    if antigo_path != novo_path and os.path.exists(antigo_path) and not os.path.exists(novo_path):
+        try:
+            os.replace(antigo_path, novo_path)
+            renamed = True
+            print(f'  [historico] renomeado {os.path.basename(antigo_path)} → {os.path.basename(novo_path)}')
+        except OSError as e:
+            return jsonify({
+                'ok': False,
+                'error': f'Não foi possível renomear o ficheiro: {e}',
+                'evento': get_evento(),
+            }), 500
+
+    return jsonify({'ok': True, 'evento': get_evento(), 'renamed': renamed})
+
+
+@app.route('/api/bridge', methods=['GET', 'POST'])
+def bridge_config():
+    """Estado e configuracao da ponte para monitor externo."""
+    if request.method == 'POST':
+        payload = request.get_json() or {}
+        cfg = load_config()
+        bridge_cfg = dict(cfg.get('bridge') or {})
+        if 'enabled' in payload:
+            bridge_cfg['enabled'] = bool(payload.get('enabled'))
+        if 'url' in payload:
+            bridge_cfg['url'] = str(payload.get('url') or '').strip()
+        if 'interval_sec' in payload:
+            try:
+                interval = float(payload.get('interval_sec') or 1.5)
+                bridge_cfg['interval_sec'] = max(1.0, min(interval, 60.0))
+            except (TypeError, ValueError):
+                return jsonify({'ok': False, 'error': 'interval_sec invalido'}), 400
+        cfg['bridge'] = bridge_cfg
+        save_config(cfg)
+        return jsonify({'ok': True, 'bridge': bridge_cfg})
+
+    cfg = load_config().get('bridge') or {}
+    state = monitor_bridge.get_state() if monitor_bridge else {}
+    return jsonify({'ok': True, 'bridge': cfg, 'state': state})
+
+
+@app.route('/api/bridge/import', methods=['POST'])
+def bridge_import():
+    """
+    Importacao manual / teste:
+      { "html": "<...>" }  ou  { "json": {...}|[...] }  ou  { "orders": [...] }
+    """
+    if not monitor_bridge:
+        return jsonify({'ok': False, 'error': 'bridge indisponivel'}), 500
+    payload = request.get_json() or {}
+    orders = payload.get('orders')
+    if orders is None and payload.get('json') is not None:
+        raw = payload.get('json')
+        text = raw if isinstance(raw, str) else json.dumps(raw, ensure_ascii=False)
+        orders = monitor_bridge.parse_remote_orders(text, 'application/json')
+    if orders is None and payload.get('html'):
+        orders = monitor_bridge.parse_remote_orders(str(payload.get('html')), 'text/html')
+    if not isinstance(orders, list):
+        return jsonify({'ok': False, 'error': 'Sem pedidos para importar'}), 400
+
+    summary = monitor_bridge.import_orders(orders, create_order_entry, source='bridge-manual')
+    return jsonify({'ok': True, **summary})
 
 
 @app.route('/api/print', methods=['POST'])
@@ -738,6 +892,7 @@ def get_queue():
         'count': len(pending),
         'cancelled': cancelled[:30],
         'cancelled_count': len(cancelled),
+        'evento': get_evento(),
     })
 
 
@@ -932,12 +1087,21 @@ if __name__ == '__main__':
     except Exception:
         pass
 
+    # Ponte para monitor externo (desligada ate configurares URL + parser)
+    if monitor_bridge:
+        monitor_bridge.start_bridge(load_config, create_order_entry)
+
     lan_ip = get_lan_ip()
+    ev = get_evento()
     print('=' * 46)
-    print('  HOME SUSHI POS — Servidor de impressão')
+    print(f'  HOME SUSHI POS — {ev["nome"]}')
+    print(f'  {ev["detalhe"]}')
+    print(f'  Histórico: {ev["ficheiro"]}')
     print('  POS:     http://localhost:5000')
     print('  Monitor: http://localhost:5000/monitor')
     if lan_ip:
         print(f'  Rede:    http://{lan_ip}:5000/monitor')
+    bridge_on = bool((load_config().get('bridge') or {}).get('enabled'))
+    print(f'  Bridge:  {"ligada" if bridge_on else "desligada"}')
     print('=' * 46)
     app.run(host='0.0.0.0', port=5000, debug=False)

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home Sushi — Monitor de Pedidos</title>
+<title>Home Sushi — NEXO · Monitor</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -403,8 +403,8 @@
            onerror="this.style.display='none'">
     </div>
     <div>
-      <div class="title">Monitor de Pedidos</div>
-      <div class="subtitle">Fila por ordem de chegada</div>
+      <div class="title" id="logo-event">NEXO · Monitor</div>
+      <div class="subtitle" id="logo-sub">Julho 2026 · Viseu</div>
     </div>
   </div>
   <div class="header-meta">
@@ -454,6 +454,17 @@ function updateClock() {
 
 function money(v) {
   return parseFloat(v || 0).toFixed(2).replace('.', ',') + ' €';
+}
+
+function applyEvento(ev) {
+  if (!ev) return;
+  const nome = ev.nome || 'NEXO';
+  const detalhe = ev.detalhe || '';
+  const elNome = document.getElementById('logo-event');
+  const elSub = document.getElementById('logo-sub');
+  if (elNome) elNome.textContent = `${nome} · Monitor`;
+  if (elSub) elSub.textContent = detalhe || 'Fila por ordem de chegada';
+  document.title = `Home Sushi — ${nome} · Monitor`;
 }
 
 function setOnline(ok) {
@@ -580,6 +591,7 @@ async function refresh() {
       if (!r.ok) continue;
       const data = await r.json();
       setOnline(true);
+      if (data.evento) applyEvento(data.evento);
       if (url.startsWith('http://127.0.0.1')) apiRoot = 'http://127.0.0.1:5000';
       else if (url.startsWith('http://localhost')) apiRoot = 'http://localhost:5000';
       else apiRoot = SERVER;

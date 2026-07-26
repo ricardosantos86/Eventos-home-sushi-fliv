@@ -1,3 +1,13 @@
 {
-  "printer": "Imp. Caixa"
+  "printer": "Imp. Caixa",
+  "evento": {
+    "nome": "NEXO",
+    "detalhe": "Julho 2026 · Viseu",
+    "ficheiro": "historico_nexo_julho_2026.json"
+  },
+  "bridge": {
+    "enabled": false,
+    "url": "http://127.0.0.1:5000/api/queue",
+    "interval_sec": 1.5
+  }
 }
