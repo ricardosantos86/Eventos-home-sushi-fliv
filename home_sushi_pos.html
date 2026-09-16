@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home Sushi — NEXO · POS</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<title>Home Sushi — ROCK&amp;DÃO · POS</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f5f4f1;
@@ -19,7 +19,7 @@
     --text-dim: #aaa;
     --red: #c41230;
     --mono: 'DM Mono', monospace;
-    --sans: 'Syne', sans-serif;
+    --sans: 'DM Sans', 'Segoe UI', sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -98,6 +98,36 @@
     font-size: 12px;
     color: rgba(255,255,255,0.5);
   }
+  .monitor-link {
+    margin-left: 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: #fff;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.25;
+    cursor: pointer;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .monitor-link:hover { background: rgba(255,255,255,0.12); }
+  .monitor-link-lbl {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+  }
+  .monitor-link-url {
+    color: #93c5fd;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .server-status {
     display: flex;
     align-items: center;
@@ -150,11 +180,20 @@
     background: var(--border2);
   }
 
+  .product-group {
+    margin-bottom: 20px;
+  }
+  .product-group:last-child {
+    margin-bottom: 0;
+  }
+  .product-group .section-label {
+    margin-bottom: 10px;
+  }
   .product-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 10px;
+    padding: 10px 12px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-left: 3px solid transparent;
@@ -170,19 +209,18 @@
     border-left-color: var(--accent);
     background: var(--accent-dim);
   }
-  .product-cat {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 1px;
+  .product-info {
+    flex: 1;
+    min-width: 0;
+    padding-right: 6px;
   }
   .product-name {
     font-size: 13px;
     font-weight: 600;
     color: var(--text);
-    line-height: 1.2;
+    line-height: 1.45;
+    overflow-wrap: break-word;
+    padding: 1px 0 2px;
   }
   .product-price {
     font-family: var(--mono);
@@ -421,24 +459,6 @@
     margin-bottom: 4px;
     display: block;
   }
-  .cliente-input {
-    width: 100%;
-    padding: 8px 10px;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    font-family: var(--mono);
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text);
-    margin-bottom: 8px;
-    transition: border-color 0.15s;
-  }
-  .cliente-input:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
-  .cliente-input::placeholder { color: var(--text-dim); }
   .obs-input {
     width: 100%;
     padding: 6px 10px;
@@ -742,7 +762,8 @@
   }
   .hist-pay.mbway    { background: #dbeafe; color: #1d4ed8; }
   .hist-pay.dinheiro { background: #dcfce7; color: #15803d; }
-  .hist-pay.nexo     { background: #fce7f3; color: #9d174d; }
+  .hist-pay.evento,
+  .hist-pay.rockdao  { background: #fce7f3; color: #9d174d; }
   .hist-status {
     font-family: var(--mono);
     font-size: 10px;
@@ -864,12 +885,16 @@
       <span class="logo-fallback" style="display:none;">HOME SUSHI</span>
     </div>
     <div style="margin-left:12px;" class="logo-event-wrap" onclick="openEventoModal()" title="Alterar nome do evento">
-      <div class="logo-event" id="logo-event">NEXO</div>
-      <div class="logo-sub" id="logo-sub">Julho 2026 · Viseu</div>
+      <div class="logo-event" id="logo-event">ROCK&amp;DÃO</div>
+      <div class="logo-sub" id="logo-sub">18 e 19 setembro 2026 · Viseu</div>
     </div>
   </div>
   <div style="display:flex; align-items:center;">
     <div class="header-date" id="header-date"></div>
+    <button type="button" class="monitor-link" id="monitor-link" onclick="copyMonitorLink()" title="Clica para copiar. Abre noutro telemóvel ou tablet na mesma Wi-Fi.">
+      <span class="monitor-link-lbl" id="monitor-link-lbl">Monitor (mesma rede)</span>
+      <span class="monitor-link-url" id="monitor-link-url">a ligar...</span>
+    </button>
     <div class="server-status" onclick="openPrinterModal()" title="Configurar impressora">
       <div class="server-dot" id="server-dot"></div>
       <span class="server-label" id="server-label">a ligar...</span>
@@ -886,7 +911,6 @@
 
   <!-- PRODUTOS -->
   <div class="col-produtos">
-    <div class="section-label">Produtos</div>
     <div id="products-list"></div>
   </div>
 
@@ -901,8 +925,6 @@
       <div class="empty-msg">— vazio —</div>
     </div>
     <div class="obs-area">
-      <span class="obs-label">Nº cliente / pulseira</span>
-      <input class="cliente-input" type="text" id="cliente-input" inputmode="numeric" autocomplete="off" placeholder="Ex: 142">
       <span class="obs-label">Observações</span>
       <textarea class="obs-input" id="obs-input" placeholder="Sem glúten, alergia a amendoim..."></textarea>
     </div>
@@ -911,15 +933,15 @@
       <div class="total-val" id="total-val">0,00 €</div>
     </div>
     <div class="btn-row">
-      <button class="btn-finalize" id="btn-finalize" disabled onclick="finalizeOrder()">MONITOR PEDIDOS</button>
-      <button class="btn-print" id="btn-print" disabled onclick="registerOrder()">REGISTAR</button>
+      <button class="btn-finalize" id="btn-finalize" disabled onclick="finalizeOrder()">COZINHA</button>
+      <button class="btn-print" id="btn-print" disabled onclick="registerOrder()">SÓ REGISTAR</button>
       <button class="btn-clear" onclick="clearOrder()">LIMPAR</button>
     </div>
   </div>
 
   <!-- HISTÓRICO -->
   <div class="col-historico">
-    <div class="section-label" id="hist-section-label">Histórico · NEXO</div>
+    <div class="section-label" id="hist-section-label">Histórico · ROCK&amp;DÃO</div>
     <div class="hist-date-bar">
       <div class="hist-date-toggle" onclick="toggleCalendar()">
         <span class="hist-date-toggle-label" id="hist-date-toggle-label">—</span>
@@ -963,11 +985,11 @@
     <h2>Nome do evento</h2>
     <p class="modal-hint">Aparece no POS e no monitor. Podes mudar quando quiseres.</p>
     <label>Nome</label>
-    <input type="text" id="evento-nome" placeholder="NEXO" maxlength="40">
+    <input type="text" id="evento-nome" placeholder="ROCK&amp;DÃO" maxlength="40">
     <label>Detalhe</label>
-    <input type="text" id="evento-detalhe" placeholder="Julho 2026 · Viseu" maxlength="60">
+    <input type="text" id="evento-detalhe" placeholder="18 e 19 setembro 2026 · Viseu" maxlength="60">
     <label>Ficheiro do histórico</label>
-    <input type="text" id="evento-ficheiro" placeholder="historico_nexo_julho_2026.json" maxlength="80">
+    <input type="text" id="evento-ficheiro" placeholder="historico_rock_dao.json" maxlength="80">
     <p class="modal-hint">Se mudares o ficheiro, o sistema tenta renomear o JSON na pasta (mantém os pedidos).</p>
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="closeEventoModal()">Cancelar</button>
@@ -1015,16 +1037,16 @@
 
 <script>
 const PRODUCTS = [
-  { id: 'tempura',   cat: 'Entrada',   name: 'Tempura Camarão', price: 5.50 },
-  { id: 'ceviche',   cat: 'Entrada',   name: 'Ceviche Home',    price: 6.00 },
-  { id: 'sushi',     cat: 'Prato',     name: 'Sushi 6 Peças',   price: 8.00 },
-  { id: 'baobuta',   cat: 'Prato',     name: 'Bao Buta',        price: 8.00 },
-  { id: 'chokoreto', cat: 'Sobremesa', name: 'Mini Chokoreto',  price: 4.00 },
+  { id: 'ceviche',    cat: 'Entrada', name: 'Ceviche Home', price: 7.00 },
+  { id: 'tempura',    cat: 'Entrada', name: 'Tempura de Camarão Panko', price: 6.00 },
+  { id: 'crepes',     cat: 'Entrada', name: 'Crepes Vegetais', price: 5.00 },
+  { id: 'hamburguer', cat: 'Prato',   name: 'Salmon Burguer', price: 10.00 },
+  { id: 'sushi',      cat: 'Prato',   name: 'Sushi 6', price: 10.00 },
 ];
 
-// Evento NEXO: não pede pagamento (MBWAY/DINHEIRO ficam no código, mas não são usados)
+// Evento ROCK&DÃO: não pede pagamento (MBWAY/DINHEIRO ficam no código, mas não são usados)
 const SKIP_PAYMENT = true;
-const DEFAULT_PAYMENT = 'NEXO';
+const DEFAULT_PAYMENT = 'ROCK&DÃO';
 
 let qty = {};
 let history = [];
@@ -1086,7 +1108,6 @@ async function reprintOrder(index) {
         date: o.date, time: o.time,
         total: parseFloat(o.total),
         obs: o.obs || '',
-        cliente: o.cliente || '',
         pagamento: o.pagamento || '',
         valor_entregue: o.valorEntregue || 0,
         troco: o.troco || 0,
@@ -1134,7 +1155,6 @@ function loadOrderForEdit(index) {
     const product = PRODUCTS.find(p => p.name === l.name);
     if (product) qty[product.id] = l.qty;
   });
-  document.getElementById('cliente-input').value = o.cliente || '';
   document.getElementById('obs-input').value = o.obs || '';
 
   // Activa modo de edição
@@ -1156,20 +1176,28 @@ function cancelEdit() {
 }
 
 function renderProducts() {
-  document.getElementById('products-list').innerHTML = PRODUCTS.map(p => `
-    <div class="product-row ${qty[p.id] > 0 ? 'active' : ''}" id="row-${p.id}">
-      <div style="flex:1;">
-        <div class="product-cat">${p.cat}</div>
-        <div class="product-name">${p.name}</div>
+  const cats = [];
+  PRODUCTS.forEach(p => { if (!cats.includes(p.cat)) cats.push(p.cat); });
+  const labels = { Entrada: 'Entradas', Prato: 'Pratos' };
+  document.getElementById('products-list').innerHTML = cats.map(cat => {
+    const items = PRODUCTS.filter(p => p.cat === cat).map(p => `
+      <div class="product-row ${qty[p.id] > 0 ? 'active' : ''}" id="row-${p.id}">
+        <div class="product-info">
+          <div class="product-name">${p.name}</div>
+        </div>
+        <div class="product-price">${p.price.toFixed(2).replace('.', ',')} €</div>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="changeQty('${p.id}', -1)">−</button>
+          <span class="qty-num" id="qty-${p.id}">${qty[p.id]}</span>
+          <button class="qty-btn" onclick="changeQty('${p.id}', 1)">+</button>
+        </div>
       </div>
-      <div class="product-price">${p.price.toFixed(2).replace('.', ',')} €</div>
-      <div class="qty-ctrl">
-        <button class="qty-btn" onclick="changeQty('${p.id}', -1)">−</button>
-        <span class="qty-num" id="qty-${p.id}">${qty[p.id]}</span>
-        <button class="qty-btn" onclick="changeQty('${p.id}', 1)">+</button>
-      </div>
-    </div>
-  `).join('');
+    `).join('');
+    return `<div class="product-group">
+      <div class="section-label">${labels[cat] || cat}</div>
+      ${items}
+    </div>`;
+  }).join('');
 }
 
 function changeQty(id, delta) {
@@ -1190,7 +1218,7 @@ function renderOrder() {
   if (!lines.length) {
     el.innerHTML = '<div class="empty-msg">— vazio —</div>';
     document.getElementById('total-val').textContent = '0,00 €';
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     btnF.disabled = true;
     return;
   }
@@ -1210,10 +1238,12 @@ function renderOrder() {
   }).join('');
 
   document.getElementById('total-val').textContent = total.toFixed(2).replace('.', ',') + ' €';
-  btn.disabled = false;
-  btn.textContent = 'REGISTAR';
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = 'SÓ REGISTAR';
+  }
   btnF.disabled = false;
-  btnF.textContent = editingNum ? 'Guardar Edição' : 'MONITOR PEDIDOS';
+  btnF.textContent = editingNum ? 'Guardar Edição' : 'COZINHA';
 }
 
 function buildTalao(lines, num, dateStr, timeStr, total, copia) {
@@ -1277,15 +1307,15 @@ if (location.protocol === 'file:') {
 let serverOnline = false;
 let configuredPrinter = '';
 let currentEvento = {
-  nome: 'NEXO',
-  detalhe: 'Julho 2026 · Viseu',
-  ficheiro: 'historico_nexo_julho_2026.json',
+  nome: 'ROCK&DÃO',
+  detalhe: '18 e 19 setembro 2026 · Viseu',
+  ficheiro: 'historico_rock_dao.json',
 };
 
 function applyEvento(ev) {
   if (!ev) return;
   currentEvento = {
-    nome: ev.nome || 'NEXO',
+    nome: ev.nome || 'ROCK&DÃO',
     detalhe: ev.detalhe || '',
     ficheiro: ev.ficheiro || currentEvento.ficheiro,
   };
@@ -1365,6 +1395,7 @@ async function checkServer() {
         configuredPrinter = d.printer || '';
         if (d.counter) orderCounter = d.counter;
         if (d.evento) applyEvento(d.evento);
+        applyMonitorLink(d.monitor_url || '');
         // se ligámos via fallback, fixa o SERVER efetivo
         if (url.startsWith('http://127.0.0.1')) window.__SERVER_BASE = 'http://127.0.0.1:5000';
         else if (url.startsWith('http://localhost')) window.__SERVER_BASE = 'http://localhost:5000';
@@ -1377,6 +1408,7 @@ async function checkServer() {
   }
   if (!serverOnline) {
     configuredPrinter = '';
+    applyMonitorLink('');
   }
   const dot   = document.getElementById('server-dot');
   const label = document.getElementById('server-label');
@@ -1392,6 +1424,30 @@ async function checkServer() {
       ? configuredPrinter.substring(0, 22) + '…'
       : configuredPrinter;
   }
+}
+
+function applyMonitorLink(url) {
+  const el = document.getElementById('monitor-link-url');
+  const btn = document.getElementById('monitor-link');
+  if (!el || !btn) return;
+  const href = (url || '').trim() || 'http://127.0.0.1:5000/monitor';
+  btn.dataset.url = href;
+  el.textContent = href.replace(/^https?:\/\//, '');
+}
+
+async function copyMonitorLink() {
+  const btn = document.getElementById('monitor-link');
+  const lbl = document.getElementById('monitor-link-lbl');
+  const url = (btn && btn.dataset.url) || 'http://127.0.0.1:5000/monitor';
+  try {
+    await navigator.clipboard.writeText(url);
+  } catch {
+    window.prompt('Copia o link do monitor:', url);
+    return;
+  }
+  const prev = lbl.textContent;
+  lbl.textContent = 'Copiado';
+  setTimeout(() => { lbl.textContent = prev; }, 1600);
 }
 
 function apiBase() {
@@ -1410,7 +1466,7 @@ async function sairTudo() {
   } catch { /* servidor a fechar */ }
   document.body.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;height:100vh;
-                font-family:Syne,sans-serif;background:#111;color:#eee;text-align:center;padding:24px;">
+                font-family:DM Sans,Segoe UI,sans-serif;background:#111;color:#eee;text-align:center;padding:24px;">
       <div>
         <div style="font-size:22px;font-weight:700;margin-bottom:8px;">Sistema encerrado</div>
         <div style="font-family:DM Mono,monospace;font-size:12px;color:#888;">A fechar janelas…</div>
@@ -1663,13 +1719,7 @@ async function finalizeOrder() {
   if (!PRODUCTS.filter(p => qty[p.id] > 0).length) return;
   await checkServer();
   if (!serverOnline) { alert('Servidor offline. Inicia o iniciar.bat primeiro.\nAbre depois http://127.0.0.1:5000/'); return; }
-  const cliente = document.getElementById('cliente-input').value.trim();
-  if (!cliente) {
-    alert('Indica o nº do cliente / pulseira.');
-    document.getElementById('cliente-input').focus();
-    return;
-  }
-  // Evento NEXO: sem cobrança — não pede MBWAY/DINHEIRO
+  // Evento ROCK&DÃO: sem cobrança — não pede MBWAY/DINHEIRO
   if (SKIP_PAYMENT) {
     await doFinalize({ metodo: DEFAULT_PAYMENT, valorEntregue: 0, troco: 0 });
     return;
@@ -1681,12 +1731,6 @@ async function registerOrder() {
   if (!PRODUCTS.filter(p => qty[p.id] > 0).length) return;
   await checkServer();
   if (!serverOnline) { alert('Servidor offline. Inicia o iniciar.bat primeiro.\nAbre depois http://127.0.0.1:5000/'); return; }
-  const cliente = document.getElementById('cliente-input').value.trim();
-  if (!cliente) {
-    alert('Indica o nº do cliente / pulseira.');
-    document.getElementById('cliente-input').focus();
-    return;
-  }
   if (SKIP_PAYMENT) {
     await doRegister({ metodo: DEFAULT_PAYMENT, valorEntregue: 0, troco: 0 });
     return;
@@ -1702,7 +1746,6 @@ async function doFinalize(pagamento) {
   let total = 0;
   lines.forEach(p => total += p.price * qty[p.id]);
   const obs = document.getElementById('obs-input').value.trim();
-  const cliente = document.getElementById('cliente-input').value.trim();
 
   const btnF = document.getElementById('btn-finalize');
   btnF.disabled = true;
@@ -1717,7 +1760,7 @@ async function doFinalize(pagamento) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        date: dateStr, time: timeStr, total, obs, cliente,
+        date: dateStr, time: timeStr, total, obs,
         editNum: editingNum,
         status: 'pendente',
         toMonitor: true,
@@ -1741,7 +1784,6 @@ async function doFinalize(pagamento) {
     if (!editingNum) orderCounter = parseInt(num) + 1;
     const entry = {
       num, date: dateStr, time: timeStr,
-      cliente,
       lines: lines.map(p => ({ name: p.name, qty: qty[p.id] })),
       total: total.toFixed(2),
       pagamento: pagamento.metodo,
@@ -1760,7 +1802,7 @@ async function doFinalize(pagamento) {
   } catch (e) {
     alert('Erro ao finalizar: ' + e.message);
     btnF.disabled = false;
-    btnF.textContent = editingNum ? 'Guardar Edição' : 'MONITOR PEDIDOS';
+    btnF.textContent = editingNum ? 'Guardar Edição' : 'COZINHA';
   }
 }
 
@@ -1778,14 +1820,13 @@ async function doRegister(pagamento) {
   btn.textContent = 'A registar...';
 
   const obs = document.getElementById('obs-input').value.trim();
-  const cliente = document.getElementById('cliente-input').value.trim();
 
   try {
     const r = await fetch(apiBase() + '/api/finalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        date: dateStr, time: timeStr, total, obs, cliente,
+        date: dateStr, time: timeStr, total, obs,
         editNum: editingNum,
         status: 'registado',
         toMonitor: false,
@@ -1802,7 +1843,6 @@ async function doRegister(pagamento) {
     if (!editingNum) orderCounter = parseInt(num) + 1;
     const entry = {
       num, date: dateStr, time: timeStr,
-      cliente,
       lines: lines.map(p => ({ name: p.name, qty: qty[p.id] })),
       total: total.toFixed(2),
       pagamento: pagamento.metodo,
@@ -1821,13 +1861,12 @@ async function doRegister(pagamento) {
   } catch (e) {
     alert('Erro ao registar: ' + e.message);
     btn.disabled    = false;
-    btn.textContent = 'REGISTAR';
+    btn.textContent = 'SÓ REGISTAR';
   }
 }
 
 function clearOrder() {
   PRODUCTS.forEach(p => qty[p.id] = 0);
-  document.getElementById('cliente-input').value = '';
   document.getElementById('obs-input').value = '';
   editingNum = null;
   document.getElementById('edit-banner').classList.remove('visible');
@@ -1938,8 +1977,9 @@ function renderHistory() {
 
   el.innerHTML = filtered.map(o => {
     const i         = history.indexOf(o);
+    const payCls = String(o.pagamento || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'') || 'evento';
     const payBadge  = o.pagamento
-      ? `<span class="hist-pay ${o.pagamento.toLowerCase()}">${o.pagamento}</span>` : '';
+      ? `<span class="hist-pay ${payCls}">${o.pagamento}</span>` : '';
     const statusLabel = ({
       pendente: 'pendente',
       impresso: 'impresso',
@@ -1962,7 +2002,6 @@ function renderHistory() {
           <span class="hist-total">${totalStr} €</span>
         </div>
         <div class="hist-body">
-          ${o.cliente ? `<div class="hist-item" style="color:var(--accent);font-weight:600;">Cliente #${o.cliente}</div>` : ''}
           ${o.lines.map(l => `<div class="hist-item">${l.qty}× ${l.name}</div>`).join('')}
           ${trocoLine}
           <div style="margin-top:8px; display:flex; gap:6px;">

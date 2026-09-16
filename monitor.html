@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home Sushi — NEXO · Monitor</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+<title>Home Sushi — ROCK&amp;DÃO · Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #111111;
@@ -20,7 +20,7 @@
     --text-muted: #aaa;
     --text-dim: #666;
     --mono: 'DM Mono', monospace;
-    --sans: 'Syne', sans-serif;
+    --sans: 'DM Sans', 'Segoe UI', sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -139,7 +139,6 @@
   .btn-recuperar.has-items {
     background: #2563eb;
     color: #fff;
-    animation: pulseRec 1.6s ease-in-out infinite;
   }
   .btn-recuperar .badge {
     background: #fff;
@@ -211,12 +210,13 @@
     padding: 8px 10px;
     font-size: 13px;
   }
-  .cancelled-row .c-num { font-weight: 700; min-width: 72px; }
-  .cancelled-row .c-cli {
+  .cancelled-row .c-st {
     font-family: var(--mono);
-    color: var(--accent);
-    font-weight: 600;
-    min-width: 70px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    min-width: 72px;
   }
   .cancelled-row .c-info {
     flex: 1;
@@ -239,6 +239,7 @@
     flex: 1;
     padding: 14px 16px 20px;
     overflow-y: auto;
+    width: 100%;
   }
 
   .empty {
@@ -258,12 +259,13 @@
     font-size: 12px;
   }
 
-  /* Grelha auto-ajustável: ~3 colunas no desktop, 2/1 em ecrãs menores */
+  /* Cards com largura estável; mais colunas em janelas largas (sem esticar) */
   .queue {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 320px));
+    gap: 12px;
     align-content: start;
+    justify-content: start;
   }
 
   .card {
@@ -289,31 +291,6 @@
     font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1;
-  }
-  .card-cliente {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(196, 18, 48, 0.15);
-    border: 1px solid rgba(196, 18, 48, 0.35);
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--accent);
-    font-family: var(--mono);
-  }
-  .card-cliente .lbl {
-    font-size: 9px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-  .card-cliente.missing {
-    background: var(--surface2);
-    border-color: var(--border);
-    color: var(--text-dim);
   }
   .card-meta {
     font-family: var(--mono);
@@ -380,9 +357,16 @@
   .btn-no { background: var(--no); }
   .btn-no:hover:not(:disabled) { background: var(--no-hover); }
 
-  @media (min-width: 1100px) {
+  @media (min-width: 1400px) {
     .queue {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(auto-fill, minmax(280px, 340px));
+      gap: 14px;
+    }
+  }
+  @media (min-width: 1800px) {
+    .queue {
+      grid-template-columns: repeat(auto-fill, minmax(290px, 360px));
+      gap: 16px;
     }
   }
   @media (max-width: 700px) {
@@ -403,18 +387,18 @@
            onerror="this.style.display='none'">
     </div>
     <div>
-      <div class="title" id="logo-event">NEXO · Monitor</div>
-      <div class="subtitle" id="logo-sub">Julho 2026 · Viseu</div>
+      <div class="title" id="logo-event">ROCK&amp;DÃO · Monitor</div>
+      <div class="subtitle" id="logo-sub">18 e 19 setembro 2026 · Viseu</div>
     </div>
   </div>
   <div class="header-meta">
     <div class="queue-count"><strong id="count">0</strong> pendente(s)</div>
     <div class="recover-wrap">
-      <button class="btn-recuperar" id="btn-recuperar" onclick="toggleCancelled()" title="Pedidos removidos da fila">
-        RECUPERAR <span class="badge" id="cancelled-count">0</span>
+      <button class="btn-recuperar" id="btn-recuperar" onclick="toggleCancelled()" title="Pedidos que saíram da fila — podes recuperar">
+        HISTÓRICO <span class="badge" id="cancelled-count">0</span>
       </button>
       <div class="recover-panel" id="recover-panel">
-        <div class="recover-panel-head">Removidos da fila</div>
+        <div class="recover-panel-head">Histórico</div>
         <div id="cancelled-list" class="cancelled-list"></div>
       </div>
     </div>
@@ -458,7 +442,7 @@ function money(v) {
 
 function applyEvento(ev) {
   if (!ev) return;
-  const nome = ev.nome || 'NEXO';
+  const nome = ev.nome || 'ROCK&DÃO';
   const detalhe = ev.detalhe || '';
   const elNome = document.getElementById('logo-event');
   const elSub = document.getElementById('logo-sub');
@@ -494,10 +478,6 @@ function renderQueue(orders) {
       const lines = (o.lines || []).map(l => `
         <li><span class="qty">${l.qty}x</span><span>${l.name}</span></li>
       `).join('');
-      const clienteVal = String(o.cliente ?? o.num_cliente ?? o.clienteNum ?? '').trim();
-      const cliente = clienteVal
-        ? `<div class="card-cliente"><span class="lbl">Cliente</span>#${escapeHtml(clienteVal)}</div>`
-        : `<div class="card-cliente missing"><span class="lbl">Cliente</span>—</div>`;
       const obs = String(o.obs ?? '').trim()
         ? `<div class="obs"><strong>OBS:</strong> ${escapeHtml(o.obs)}</div>`
         : '';
@@ -508,7 +488,6 @@ function renderQueue(orders) {
           <div class="card-top">
             <div class="card-num">Pedido #${escapeHtml(o.num)}</div>
           </div>
-          ${cliente}
           <div class="card-meta">${escapeHtml(o.time || '')}${o.pagamento ? ' · ' + escapeHtml(o.pagamento) : ''} · ${money(o.total)}</div>
           <ul class="lines">${lines}</ul>
           ${obs}
@@ -531,20 +510,20 @@ function renderCancelled(orders) {
   btn.classList.toggle('has-items', n > 0);
 
   if (!n) {
-    list.innerHTML = '<div class="cancelled-empty">Nenhum pedido removido da fila.</div>';
+    list.innerHTML = '<div class="cancelled-empty">Sem pedidos no histórico.</div>';
     if (cancelledOpen) panel.classList.add('open');
     else panel.classList.remove('open');
     return;
   }
 
   list.innerHTML = orders.map(o => {
-    const clienteVal = String(o.cliente ?? '').trim();
+    const st = ({ impresso: 'concluído', removido: 'removido', rejeitado: 'removido' })[o.status] || (o.status || '');
     const items = (o.lines || []).map(l => `${l.qty}x ${l.name}`).join(', ');
     const disabled = busy.has(String(o.num)) ? 'disabled' : '';
     return `
       <div class="cancelled-row">
         <span class="c-num">#${escapeHtml(o.num)}</span>
-        <span class="c-cli">${clienteVal ? 'Cli #' + escapeHtml(clienteVal) : '—'}</span>
+        <span class="c-st">${escapeHtml(st)}</span>
         <span class="c-info">${escapeHtml(o.time || '')} · ${escapeHtml(items)}</span>
         <button class="btn btn-restore" ${disabled} onclick="event.stopPropagation(); restore('${escapeHtml(o.num)}')">Recuperar</button>
       </div>`;
@@ -683,7 +662,7 @@ async function sairTudo() {
   } catch { /* servidor a fechar */ }
   document.body.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:center;height:100vh;
-                font-family:Syne,sans-serif;background:#111;color:#eee;text-align:center;padding:24px;">
+                font-family:DM Sans,Segoe UI,sans-serif;background:#111;color:#eee;text-align:center;padding:24px;">
       <div>
         <div style="font-size:22px;font-weight:700;margin-bottom:8px;">Sistema encerrado</div>
         <div style="font-family:DM Mono,monospace;font-size:12px;color:#888;">A fechar janelas…</div>

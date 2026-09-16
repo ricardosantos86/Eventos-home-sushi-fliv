@@ -7,7 +7,7 @@ import subprocess
 import sys
 from datetime import datetime
 from collections import defaultdict
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 import win32print
 from PIL import Image
@@ -23,9 +23,9 @@ LOGO_PATH    = os.path.join(BASE_DIR, 'logo.png')
 LEGACY_HISTORY_FILE = os.path.join(BASE_DIR, 'historico.json')
 
 DEFAULT_EVENTO = {
-    'nome': 'NEXO',
-    'detalhe': 'Julho 2026 · Viseu',
-    'ficheiro': 'historico_nexo_julho_2026.json',
+    'nome': 'ROCK&DÃO',
+    'detalhe': '18 e 19 setembro 2026 · Viseu',
+    'ficheiro': 'historico_rock_dao.json',
 }
 
 try:
@@ -235,13 +235,6 @@ def build_escpos_estabelecimento(order):
     buf += ESC + b'!\x38'
     buf += esc_line(f"PEDIDO #{order['num']}")
     buf += ESC + b'!\x00'
-    cliente = str(order.get('cliente', '') or '').strip()
-    if cliente:
-        buf += ESC + b'!\x10'
-        buf += ESC + b'E\x01'
-        buf += esc_line(f"CLIENTE #{cliente}")
-        buf += ESC + b'E\x00'
-        buf += ESC + b'!\x00'
     buf += ESC + b'a\x00'
     buf += divider()
 
@@ -312,13 +305,6 @@ def build_escpos_cliente(order):
     buf += ESC + b'!\x38'
     buf += esc_line(f"PEDIDO #{order['num']}")
     buf += ESC + b'!\x00'
-    cliente = str(order.get('cliente', '') or '').strip()
-    if cliente:
-        buf += ESC + b'!\x10'
-        buf += ESC + b'E\x01'
-        buf += esc_line(f"CLIENTE #{cliente}")
-        buf += ESC + b'E\x00'
-        buf += ESC + b'!\x00'
     buf += ESC + b'a\x00'          # esquerda
     buf += divider()
 
@@ -479,40 +465,26 @@ def build_escpos_daily_report(date_str, orders):
     return bytes(buf)
 
 
-def build_escpos_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO'):
-    """Papel de controlo — espelha o que se vê no monitor."""
+def build_escpos_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO', simples=False):
+    """Papel de controlo. simples=True: só número e itens (Concluído no monitor)."""
     buf = bytearray()
     buf += ESC + b'@'
     buf += CODEPAGE_CP858
 
-    # Cabeçalho
     buf += ESC + b'a\x01'
-    buf += ESC + b'E\x01'
-    buf += esc_line(titulo)
-    buf += ESC + b'E\x00'
-    buf += esc_line(f"{order.get('date', '')}  {order.get('time', '')}")
-    buf += divider()
+    if not simples:
+        buf += ESC + b'E\x01'
+        buf += esc_line(titulo)
+        buf += ESC + b'E\x00'
+        buf += esc_line(f"{order.get('date', '')}  {order.get('time', '')}")
+        buf += divider()
 
-    # Pedido (grande)
     buf += ESC + b'!\x38'
     buf += esc_line(f"PEDIDO #{order['num']}")
     buf += ESC + b'!\x00'
-
-    # Cliente (destaque)
-    cliente = str(order.get('cliente', '') or '').strip()
-    if cliente:
-        buf += ESC + b'!\x20'
-        buf += ESC + b'E\x01'
-        buf += esc_line(f"CLIENTE #{cliente}")
-        buf += ESC + b'E\x00'
-        buf += ESC + b'!\x00'
-    else:
-        buf += esc_line('CLIENTE #—')
-
     buf += ESC + b'a\x00'
     buf += divider()
 
-    # Itens
     COL_QTY  = 4
     COL_NAME = W - COL_QTY - 2
     for item in order.get('lines', []):
@@ -522,7 +494,6 @@ def build_escpos_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO'):
 
     buf += divider()
 
-    # Observações
     obs = str(order.get('obs', '') or '').strip()
     if obs:
         buf += ESC + b'E\x01'
@@ -531,20 +502,21 @@ def build_escpos_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO'):
         buf = _obs_lines(buf, obs)
         buf += divider()
 
-    # Pagamento + total (como no monitor)
-    pagamento = str(order.get('pagamento', '') or '').strip()
-    total = float(order.get('total', 0) or 0)
-    total_s = f"{total:.2f}".replace('.', ',') + '€'
-    meta = f"{pagamento} · {total_s}" if pagamento else total_s
-    buf += ESC + b'a\x01'
-    buf += ESC + b'!\x10'
-    buf += esc_line(meta)
-    buf += ESC + b'!\x00'
-    buf += b'\n'
-    if rodape:
-        buf += ESC + b'E\x01'
-        buf += esc_line(rodape)
-        buf += ESC + b'E\x00'
+    if not simples:
+        pagamento = str(order.get('pagamento', '') or '').strip()
+        total = float(order.get('total', 0) or 0)
+        total_s = f"{total:.2f}".replace('.', ',') + '€'
+        meta = f"{pagamento} · {total_s}" if pagamento else total_s
+        buf += ESC + b'a\x01'
+        buf += ESC + b'!\x10'
+        buf += esc_line(meta)
+        buf += ESC + b'!\x00'
+        buf += b'\n'
+        if rodape:
+            buf += ESC + b'E\x01'
+            buf += esc_line(rodape)
+            buf += ESC + b'E\x00'
+
     buf += b'\n\n\n'
     buf += GS + b'V\x41\x03'
     return bytes(buf)
@@ -584,7 +556,7 @@ def print_order_copies(order):
     raw_print(printer_name, copy1 + copy2)
 
 
-def print_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO'):
+def print_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO', simples=False):
     """Imprime um papel de controlo."""
     cfg = load_config()
     printer_name = cfg.get('printer', '')
@@ -595,19 +567,26 @@ def print_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO'):
     for line in order.get('lines', []):
         line['qty'] = int(line.get('qty', 0) or 0)
         line['price'] = float(line.get('price', 0) or 0)
-    raw_print(printer_name, build_escpos_controlo(order, titulo=titulo, rodape=rodape))
+    raw_print(printer_name, build_escpos_controlo(order, titulo=titulo, rodape=rodape, simples=simples))
 
 
 # ── Rotas API ─────────────────────────────────────────────────────────────────
 
+def _html_page(filename):
+    resp = make_response(send_from_directory(BASE_DIR, filename))
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+    resp.headers['Pragma'] = 'no-cache'
+    return resp
+
+
 @app.route('/')
 def index():
-    return send_from_directory(BASE_DIR, 'home_sushi_pos.html')
+    return _html_page('home_sushi_pos.html')
 
 
 @app.route('/monitor')
 def monitor_page():
-    return send_from_directory(BASE_DIR, 'monitor.html')
+    return _html_page('monitor.html')
 
 
 @app.route('/logo.png')
@@ -619,12 +598,16 @@ def serve_logo():
 def health():
     cfg = load_config()
     ev = get_evento(cfg)
+    lan_ip = get_lan_ip()
+    monitor_url = f'http://{lan_ip}:5000/monitor' if lan_ip else 'http://127.0.0.1:5000/monitor'
     return jsonify({
         'status': 'ok',
         'printer': cfg.get('printer', ''),
         'counter': order_counter,
         'evento': ev,
         'historico_ficheiro': ev['ficheiro'],
+        'lan_ip': lan_ip or '',
+        'monitor_url': monitor_url,
     })
 
 
@@ -885,13 +868,19 @@ def get_queue():
     history = load_history()
     pending = [o for o in history if o.get('status') == 'pendente']
     pending.sort(key=lambda o: int(o.get('num', 0) or 0))
-    cancelled = [o for o in history if o.get('status') in ('rejeitado', 'removido')]
-    cancelled.sort(key=lambda o: int(o.get('num', 0) or 0), reverse=True)
+    done = [o for o in history if o.get('status') in ('impresso', 'removido', 'rejeitado')]
+    done.sort(key=lambda o: int(o.get('num', 0) or 0), reverse=True)
+
+    def _public(order):
+        view = dict(order)
+        view.pop('cliente', None)
+        return view
+
     return jsonify({
-        'queue': pending,
+        'queue': [_public(o) for o in pending],
         'count': len(pending),
-        'cancelled': cancelled[:30],
-        'cancelled_count': len(cancelled),
+        'cancelled': [_public(o) for o in done[:80]],
+        'cancelled_count': len(done),
         'evento': get_evento(),
     })
 
@@ -913,7 +902,7 @@ def approve_queue_order():
             return jsonify({'ok': False, 'error': 'Pedido ja processado'}), 409
 
         try:
-            print_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO')
+            print_controlo(order, simples=True)
         except ValueError as e:
             if str(e) == 'NO_PRINTER':
                 return jsonify({'ok': False, 'error': 'NO_PRINTER'}), 400
@@ -960,8 +949,8 @@ def restore_queue_order():
         idx = find_order_index(history, num)
         if idx is None:
             return jsonify({'ok': False, 'error': 'Pedido nao encontrado'}), 404
-        if history[idx].get('status') not in ('rejeitado', 'removido'):
-            return jsonify({'ok': False, 'error': 'So pedidos removidos da fila podem ser recuperados'}), 409
+        if history[idx].get('status') not in ('rejeitado', 'removido', 'impresso'):
+            return jsonify({'ok': False, 'error': 'Este pedido nao pode ser recuperado para a fila'}), 409
 
         history[idx]['status'] = 'pendente'
         save_history(history)

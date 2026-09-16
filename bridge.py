@@ -66,7 +66,6 @@ def order_fingerprint(order: dict) -> str:
     if ext:
         return f'ext:{ext}'
     raw = json.dumps({
-        'cliente': order.get('cliente', ''),
         'lines': order.get('lines', []),
         'total': order.get('total', 0),
         'time': order.get('time', ''),
@@ -82,7 +81,6 @@ def parse_remote_orders(payload: str, content_type: str = '') -> list[dict]:
     Cada pedido:
       {
         'external_id': '123',          # ideal (nº deles)
-        'cliente': '142',              # pulseira / nº cliente
         'obs': '',
         'lines': [{'name': '...', 'qty': 1, 'price': 0}],
         'total': 0,
@@ -112,7 +110,6 @@ def parse_remote_orders(payload: str, content_type: str = '') -> list[dict]:
     for m in re.finditer(r'data-order-id=["\']([^"\']+)["\']', text, re.I):
         found.append({
             'external_id': m.group(1),
-            'cliente': '',
             'obs': 'Importado do monitor externo (parser basico)',
             'lines': [{'name': 'Pedido externo', 'qty': 1, 'price': 0}],
             'total': 0,
@@ -141,7 +138,6 @@ def _parse_json_orders(data) -> list[dict]:
         if not isinstance(item, dict):
             continue
         ext = item.get('external_id') or item.get('id') or item.get('num') or item.get('numero') or ''
-        cliente = item.get('cliente') or item.get('client') or item.get('pulseira') or item.get('wristband') or ''
         lines_in = item.get('lines') or item.get('itens') or item.get('items') or []
         lines = []
         for ln in lines_in:
@@ -156,7 +152,6 @@ def _parse_json_orders(data) -> list[dict]:
             lines = [{'name': str(item.get('name') or item.get('nome')), 'qty': 1, 'price': float(item.get('price') or 0)}]
         out.append({
             'external_id': str(ext),
-            'cliente': str(cliente).strip(),
             'obs': str(item.get('obs') or item.get('notes') or '').strip(),
             'lines': lines,
             'total': float(item.get('total') or 0),
@@ -211,7 +206,7 @@ def import_orders(orders: list[dict], ingest_fn: Callable[[dict], dict], source:
             skipped += 1
             continue
 
-        order.setdefault('pagamento', 'NEXO')
+        order.setdefault('pagamento', 'ROCK&DÃO')
         order.setdefault('valor_entregue', 0)
         order.setdefault('troco', 0)
         order['status'] = 'pendente'
