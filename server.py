@@ -1269,7 +1269,7 @@ if __name__ == '__main__':
     lan_ip = get_lan_ip()
     ev = get_evento()
     ssl_ctx = None
-    want_https = bool(load_config().get('https', True))
+    want_https = bool(load_config().get('https', False))
     if want_https:
         ssl_ctx = ensure_ssl_cert()
         HTTPS_ACTIVE = bool(ssl_ctx)
