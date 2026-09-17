@@ -571,6 +571,174 @@
     font-family: var(--mono);
   }
 
+  /* MOBILE TABS */
+  .mobile-tabs {
+    display: none;
+    flex-shrink: 0;
+    background: #111;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  .mobile-tab {
+    flex: 1;
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.45);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 12px 8px;
+    cursor: pointer;
+    position: relative;
+    letter-spacing: 0.02em;
+  }
+  .mobile-tab.active {
+    color: #fff;
+  }
+  .mobile-tab.active::after {
+    content: '';
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    bottom: 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 3px 3px 0 0;
+  }
+  .mobile-tab-badge {
+    display: none;
+    min-width: 18px;
+    padding: 1px 6px;
+    margin-left: 4px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    vertical-align: middle;
+  }
+  .mobile-tab-badge.show { display: inline-block; }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* RESPONSIVE — tablet / telemóvel */
+  @media (max-width: 980px) {
+    body {
+      height: 100dvh;
+      overflow: hidden;
+    }
+    header {
+      padding: 10px 12px;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .logo { min-width: 0; }
+    .logo-mark {
+      height: 36px;
+      padding: 3px 8px;
+    }
+    .logo-mark img { height: 30px; }
+    .logo-event { font-size: 13px; }
+    .logo-sub { display: none; }
+    .header-date,
+    #monitor-link,
+    #pos-link { display: none !important; }
+    .header-actions {
+      margin-left: auto;
+      max-width: 100%;
+    }
+    .server-status { margin-left: 0; }
+    .server-label {
+      max-width: 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .btn-bridge { margin-left: 0; }
+    .btn-sair { margin-left: 0; }
+
+    .mobile-tabs { display: flex; }
+
+    .main {
+      flex-direction: column;
+      min-height: 0;
+    }
+    .col-produtos,
+    .col-pedido,
+    .col-historico {
+      display: none;
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      border-right: none;
+      box-shadow: none;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 12px;
+    }
+    .main.tab-produtos .col-produtos { display: block; }
+    .main.tab-pedido .col-pedido { display: flex; }
+    .main.tab-historico .col-historico { display: block; }
+
+    .product-row {
+      padding: 12px;
+      gap: 10px;
+    }
+    .product-name { font-size: 14px; }
+    .qty-btn {
+      width: 42px;
+      height: 42px;
+      font-size: 20px;
+    }
+    .qty-num { min-width: 28px; font-size: 14px; }
+
+    .col-pedido {
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+    .ol-name { max-width: none; font-size: 14px; }
+    .total-val { font-size: 26px; }
+    .btn-row {
+      position: sticky;
+      bottom: 0;
+      background: var(--surface);
+      padding-top: 10px;
+      padding-bottom: 4px;
+      margin-top: auto;
+      z-index: 2;
+      gap: 8px;
+    }
+    .btn-print,
+    .btn-finalize,
+    .btn-clear {
+      padding: 14px 8px;
+      font-size: 12px;
+      min-height: 48px;
+    }
+
+    .modal {
+      width: calc(100vw - 28px);
+      max-width: 400px;
+      padding: 20px;
+      max-height: calc(100dvh - 40px);
+      overflow-y: auto;
+    }
+    .payment-btns { flex-direction: column; }
+  }
+
+  @media (max-width: 480px) {
+    .btn-row { flex-wrap: wrap; }
+    .btn-finalize { flex: 1 1 100%; order: -1; }
+    .btn-print,
+    .btn-clear { flex: 1 1 40%; }
+  }
+
   /* PRINT */
   @media print {
     body > * { display: none !important; }
@@ -889,7 +1057,7 @@
       <div class="logo-sub" id="logo-sub">18 e 19 setembro 2026 · Viseu</div>
     </div>
   </div>
-  <div style="display:flex; align-items:center;">
+  <div class="header-actions">
     <div class="header-date" id="header-date"></div>
     <button type="button" class="monitor-link" id="monitor-link" onclick="copyMonitorLink()" title="Clica para copiar. Abre noutro telemóvel ou tablet na mesma Wi-Fi.">
       <span class="monitor-link-lbl" id="monitor-link-lbl">Monitor (mesma rede)</span>
@@ -899,6 +1067,10 @@
       <div class="server-dot" id="server-dot"></div>
       <span class="server-label" id="server-label">a ligar...</span>
     </div>
+    <button type="button" class="monitor-link" id="pos-link" onclick="copyPosLink()" title="Clica para copiar. Abre o caixa noutro PC ou tablet na mesma Wi-Fi.">
+      <span class="monitor-link-lbl" id="pos-link-lbl">POS (mesma rede)</span>
+      <span class="monitor-link-url" id="pos-link-url">a ligar...</span>
+    </button>
     <button class="btn-bridge" id="btn-bridge" onclick="openBridgeModal()" title="Observar monitor externo">
       <span class="dot" id="bridge-dot"></span>
       PONTE
@@ -907,7 +1079,15 @@
   </div>
 </header>
 
-<div class="main">
+<nav class="mobile-tabs" id="mobile-tabs" aria-label="Secções do caixa">
+  <button type="button" class="mobile-tab active" data-tab="produtos" onclick="setMobileTab('produtos')">Produtos</button>
+  <button type="button" class="mobile-tab" data-tab="pedido" onclick="setMobileTab('pedido')">
+    Pedido<span class="mobile-tab-badge" id="mobile-tab-badge"></span>
+  </button>
+  <button type="button" class="mobile-tab" data-tab="historico" onclick="setMobileTab('historico')">Histórico</button>
+</nav>
+
+<div class="main tab-produtos" id="main-layout">
 
   <!-- PRODUTOS -->
   <div class="col-produtos">
@@ -1165,6 +1345,7 @@ function loadOrderForEdit(index) {
 
   renderProducts();
   renderOrder();
+  setMobileTab('pedido');
   // Scroll para o topo do painel
   document.querySelector('.col-pedido').scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1209,6 +1390,31 @@ function changeQty(id, delta) {
   renderOrder();
 }
 
+function updateMobilePedidoBadge() {
+  const badge = document.getElementById('mobile-tab-badge');
+  if (!badge) return;
+  const count = PRODUCTS.reduce((n, p) => n + (qty[p.id] || 0), 0);
+  if (count > 0) {
+    badge.textContent = String(count);
+    badge.classList.add('show');
+  } else {
+    badge.textContent = '';
+    badge.classList.remove('show');
+  }
+}
+
+function setMobileTab(tab) {
+  const main = document.getElementById('main-layout');
+  if (!main) return;
+  const allowed = ['produtos', 'pedido', 'historico'];
+  const next = allowed.includes(tab) ? tab : 'produtos';
+  main.classList.remove('tab-produtos', 'tab-pedido', 'tab-historico');
+  main.classList.add('tab-' + next);
+  document.querySelectorAll('.mobile-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === next);
+  });
+}
+
 function renderOrder() {
   const lines = PRODUCTS.filter(p => qty[p.id] > 0);
   const el  = document.getElementById('order-lines');
@@ -1220,6 +1426,7 @@ function renderOrder() {
     document.getElementById('total-val').textContent = '0,00 €';
     if (btn) btn.disabled = true;
     btnF.disabled = true;
+    updateMobilePedidoBadge();
     return;
   }
 
@@ -1244,6 +1451,7 @@ function renderOrder() {
   }
   btnF.disabled = false;
   btnF.textContent = editingNum ? 'Guardar Edição' : 'COZINHA';
+  updateMobilePedidoBadge();
 }
 
 function buildTalao(lines, num, dateStr, timeStr, total, copia) {
@@ -1396,6 +1604,7 @@ async function checkServer() {
         if (d.counter) orderCounter = d.counter;
         if (d.evento) applyEvento(d.evento);
         applyMonitorLink(d.monitor_url || '');
+        applyPosLink(d.pos_url || '', d.lan_ip || '');
         // se ligámos via fallback, fixa o SERVER efetivo
         if (url.startsWith('http://127.0.0.1')) window.__SERVER_BASE = 'http://127.0.0.1:5000';
         else if (url.startsWith('http://localhost')) window.__SERVER_BASE = 'http://localhost:5000';
@@ -1409,6 +1618,7 @@ async function checkServer() {
   if (!serverOnline) {
     configuredPrinter = '';
     applyMonitorLink('');
+    applyPosLink('', '');
   }
   const dot   = document.getElementById('server-dot');
   const label = document.getElementById('server-label');
@@ -1435,6 +1645,17 @@ function applyMonitorLink(url) {
   el.textContent = href.replace(/^https?:\/\//, '');
 }
 
+function applyPosLink(url, lanIp) {
+  const el = document.getElementById('pos-link-url');
+  const btn = document.getElementById('pos-link');
+  if (!el || !btn) return;
+  let href = (url || '').trim();
+  if (!href && lanIp) href = `http://${lanIp}:5000/`;
+  if (!href) href = 'http://127.0.0.1:5000/';
+  btn.dataset.url = href;
+  el.textContent = href.replace(/^https?:\/\//, '');
+}
+
 async function copyMonitorLink() {
   const btn = document.getElementById('monitor-link');
   const lbl = document.getElementById('monitor-link-lbl');
@@ -1443,6 +1664,21 @@ async function copyMonitorLink() {
     await navigator.clipboard.writeText(url);
   } catch {
     window.prompt('Copia o link do monitor:', url);
+    return;
+  }
+  const prev = lbl.textContent;
+  lbl.textContent = 'Copiado';
+  setTimeout(() => { lbl.textContent = prev; }, 1600);
+}
+
+async function copyPosLink() {
+  const btn = document.getElementById('pos-link');
+  const lbl = document.getElementById('pos-link-lbl');
+  const url = (btn && btn.dataset.url) || 'http://127.0.0.1:5000/';
+  try {
+    await navigator.clipboard.writeText(url);
+  } catch {
+    window.prompt('Copia o link do POS:', url);
     return;
   }
   const prev = lbl.textContent;

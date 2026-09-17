@@ -599,7 +599,7 @@ def health():
     cfg = load_config()
     ev = get_evento(cfg)
     lan_ip = get_lan_ip()
-    monitor_url = f'http://{lan_ip}:5000/monitor' if lan_ip else 'http://127.0.0.1:5000/monitor'
+    base = f'http://{lan_ip}:5000' if lan_ip else 'http://127.0.0.1:5000'
     return jsonify({
         'status': 'ok',
         'printer': cfg.get('printer', ''),
@@ -607,7 +607,8 @@ def health():
         'evento': ev,
         'historico_ficheiro': ev['ficheiro'],
         'lan_ip': lan_ip or '',
-        'monitor_url': monitor_url,
+        'pos_url': base + '/',
+        'monitor_url': base + '/monitor',
     })
 
 
@@ -1089,7 +1090,8 @@ if __name__ == '__main__':
     print('  POS:     http://localhost:5000')
     print('  Monitor: http://localhost:5000/monitor')
     if lan_ip:
-        print(f'  Rede:    http://{lan_ip}:5000/monitor')
+        print(f'  Rede POS: http://{lan_ip}:5000/')
+        print(f'  Rede Mon: http://{lan_ip}:5000/monitor')
     bridge_on = bool((load_config().get('bridge') or {}).get('enabled'))
     print(f'  Bridge:  {"ligada" if bridge_on else "desligada"}')
     print('=' * 46)
