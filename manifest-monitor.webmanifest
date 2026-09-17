@@ -1,7 +1,7 @@
 {
   "id": "/monitor?app=monitor",
-  "name": "Home Sushi Monitor",
-  "short_name": "Monitor",
+  "name": "EVENTOS",
+  "short_name": "EVENTOS",
   "description": "Monitor de cozinha Home Sushi — fila de pedidos",
   "start_url": "/monitor?source=pwa",
   "scope": "/",

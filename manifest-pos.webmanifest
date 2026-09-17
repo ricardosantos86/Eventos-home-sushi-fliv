@@ -1,7 +1,7 @@
 {
   "id": "/?app=pos",
-  "name": "Home Sushi POS",
-  "short_name": "POS Caixa",
+  "name": "EVENTOS",
+  "short_name": "EVENTOS",
   "description": "Caixa Home Sushi — pedidos e impressão",
   "start_url": "/?source=pwa",
   "scope": "/",
