@@ -127,23 +127,6 @@
     color: #fff;
     border-color: var(--no);
   }
-  .btn-install-pwa {
-    background: rgba(196,18,48,0.2);
-    color: #fff;
-    border: 1px solid rgba(196,18,48,0.55);
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    display: none;
-  }
-  .btn-install-pwa:hover { background: var(--accent); border-color: var(--accent); }
-  .btn-install-pwa.ready { display: inline-block; }
-  @media (max-width: 700px) {
-    .btn-install-pwa { display: inline-block; }
-  }
 
   .btn-recuperar {
     display: flex;
@@ -432,7 +415,6 @@
       <div class="server-dot" id="server-dot"></div>
       <span id="server-label">a ligar...</span>
     </div>
-    <button type="button" class="btn-install-pwa" id="btn-install-pwa" onclick="installPwa()" title="Instalar app no telemóvel">INSTALAR APP</button>
     <button class="btn-sair" onclick="sairTudo()" title="Fechar POS, monitor e servidor">SAIR</button>
   </div>
 </header>
@@ -711,29 +693,6 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
-}
-let deferredPwaPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPwaPrompt = e;
-  const btn = document.getElementById('btn-install-pwa');
-  if (btn) btn.classList.add('ready');
-});
-window.addEventListener('appinstalled', () => {
-  deferredPwaPrompt = null;
-  const btn = document.getElementById('btn-install-pwa');
-  if (btn) btn.classList.remove('ready');
-});
-async function installPwa() {
-  if (!deferredPwaPrompt) {
-    alert('No iPhone/iPad: partilha → Adicionar ao ecrã inicial.\nNo Android: menu do browser → Instalar app / Adicionar ao ecrã inicial.');
-    return;
-  }
-  deferredPwaPrompt.prompt();
-  await deferredPwaPrompt.userChoice;
-  deferredPwaPrompt = null;
-  const btn = document.getElementById('btn-install-pwa');
-  if (btn) btn.classList.remove('ready');
 }
 </script>
 </body>
