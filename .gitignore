@@ -5,3 +5,4 @@ historico_rock_dao.json
 .pos_server.pid
 bridge_seen.json
 __pycache__/
+ssl/

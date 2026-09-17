@@ -5,12 +5,13 @@ import threading
 import time
 import subprocess
 import sys
-from datetime import datetime
+import ipaddress
+from datetime import datetime, timedelta
 from collections import defaultdict
 from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 import win32print
-from PIL import Image
+from PIL import Image, ImageDraw
 
 app = Flask(__name__)
 CORS(app)
@@ -21,6 +22,11 @@ BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE  = os.path.join(BASE_DIR, 'config.json')
 LOGO_PATH    = os.path.join(BASE_DIR, 'logo.png')
 LEGACY_HISTORY_FILE = os.path.join(BASE_DIR, 'historico.json')
+SSL_DIR      = os.path.join(BASE_DIR, 'ssl')
+SSL_CERT     = os.path.join(SSL_DIR, 'cert.pem')
+SSL_KEY      = os.path.join(SSL_DIR, 'key.pem')
+ICON_CACHE   = {}
+HTTPS_ACTIVE = False
 
 DEFAULT_EVENTO = {
     'nome': 'ROCK&DÃO',
@@ -486,11 +492,22 @@ def build_escpos_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO', simples=
     buf += divider()
 
     COL_QTY  = 4
-    COL_NAME = W - COL_QTY - 2
-    for item in order.get('lines', []):
-        qty_s = f"{int(item.get('qty', 0) or 0)}x"
-        name  = str(item.get('name', ''))[:COL_NAME]
-        buf += esc_line(f"{qty_s:<{COL_QTY}}  {name}")
+    COL_SUB  = 9
+    if not simples:
+        COL_NAME = W - COL_QTY - COL_SUB - 2
+        for item in order.get('lines', []):
+            qty_s = f"{int(item.get('qty', 0) or 0)}x"
+            name  = str(item.get('name', ''))[:COL_NAME]
+            price = float(item.get('price', 0) or 0)
+            qty   = int(item.get('qty', 0) or 0)
+            sub   = f"{price * qty:.2f}".replace('.', ',') + '€'
+            buf += esc_line(f"{qty_s:<{COL_QTY}}  {name:<{COL_NAME}}{sub:>{COL_SUB}}")
+    else:
+        COL_NAME = W - COL_QTY - 2
+        for item in order.get('lines', []):
+            qty_s = f"{int(item.get('qty', 0) or 0)}x"
+            name  = str(item.get('name', ''))[:COL_NAME]
+            buf += esc_line(f"{qty_s:<{COL_QTY}}  {name}")
 
     buf += divider()
 
@@ -533,6 +550,118 @@ def get_lan_ip():
         return ip
     except Exception:
         return None
+
+
+def use_https():
+    return bool(HTTPS_ACTIVE)
+
+
+def public_scheme():
+    return 'https' if HTTPS_ACTIVE else 'http'
+
+
+def public_base(lan_ip=None):
+    ip = lan_ip if lan_ip is not None else get_lan_ip()
+    host = ip or '127.0.0.1'
+    return f'{public_scheme()}://{host}:5000'
+
+
+def ensure_ssl_cert():
+    """Gera certificado self-signed (PWA no telemóvel exige HTTPS)."""
+    if os.path.exists(SSL_CERT) and os.path.exists(SSL_KEY):
+        return (SSL_CERT, SSL_KEY)
+    os.makedirs(SSL_DIR, exist_ok=True)
+
+    try:
+        from cryptography import x509
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.x509.oid import NameOID
+    except ImportError:
+        print('  [pwa] Instala cryptography/pyopenssl para HTTPS/PWA: pip install pyopenssl')
+        return None
+
+    lan_ip = get_lan_ip()
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    subject = issuer = x509.Name([
+        x509.NameAttribute(NameOID.COMMON_NAME, lan_ip or 'localhost'),
+        x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'Home Sushi POS'),
+    ])
+    alt_names = [
+        x509.DNSName('localhost'),
+        x509.IPAddress(ipaddress.IPv4Address('127.0.0.1')),
+    ]
+    if lan_ip:
+        try:
+            alt_names.append(x509.IPAddress(ipaddress.ip_address(lan_ip)))
+        except ValueError:
+            alt_names.append(x509.DNSName(lan_ip))
+
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.utcnow() - timedelta(minutes=1))
+        .not_valid_after(datetime.utcnow() + timedelta(days=365))
+        .add_extension(x509.SubjectAlternativeName(alt_names), critical=False)
+        .sign(key, hashes.SHA256())
+    )
+
+    with open(SSL_KEY, 'wb') as f:
+        f.write(key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption(),
+        ))
+    with open(SSL_CERT, 'wb') as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
+    print(f'  [pwa] Certificado SSL gerado em {SSL_DIR}')
+    return (SSL_CERT, SSL_KEY)
+
+
+def build_app_icon(size, variant='pos'):
+    """Ícone PWA a partir do logo (quadrado, fundo marca)."""
+    key = (size, variant)
+    if key in ICON_CACHE:
+        return ICON_CACHE[key]
+
+    bg = (196, 18, 48) if variant == 'monitor' else (17, 17, 17)
+    canvas = Image.new('RGB', (size, size), bg)
+    draw = ImageDraw.Draw(canvas)
+    # canto suave / área segura maskable
+    inset = int(size * 0.12)
+    if variant == 'monitor':
+        draw.rounded_rectangle(
+            [inset // 2, inset // 2, size - inset // 2 - 1, size - inset // 2 - 1],
+            radius=size // 8,
+            fill=(26, 26, 26),
+        )
+
+    if os.path.exists(LOGO_PATH):
+        logo = Image.open(LOGO_PATH).convert('RGBA')
+        max_w = size - inset * 2
+        max_h = int(size * 0.45)
+        ratio = min(max_w / logo.width, max_h / logo.height)
+        new_size = (max(1, int(logo.width * ratio)), max(1, int(logo.height * ratio)))
+        logo = logo.resize(new_size, Image.Resampling.LANCZOS)
+        # fundo branco atrás do logo para contraste
+        pad_x, pad_y = 10, 8
+        box = Image.new('RGBA', (logo.width + pad_x * 2, logo.height + pad_y * 2), (255, 255, 255, 255))
+        box.paste(logo, (pad_x, pad_y), logo)
+        x = (size - box.width) // 2
+        y = (size - box.height) // 2
+        canvas.paste(box.convert('RGB'), (x, y))
+    else:
+        draw.text((size // 4, size // 2), 'HS', fill=(255, 255, 255))
+
+    from io import BytesIO
+    buf = BytesIO()
+    canvas.save(buf, format='PNG')
+    data = buf.getvalue()
+    ICON_CACHE[key] = data
+    return data
 
 
 def find_order_index(history, num):
@@ -594,12 +723,67 @@ def serve_logo():
     return send_from_directory(BASE_DIR, 'logo.png')
 
 
+@app.route('/manifest-pos.webmanifest')
+def manifest_pos():
+    resp = make_response(send_from_directory(BASE_DIR, 'manifest-pos.webmanifest'))
+    resp.headers['Content-Type'] = 'application/manifest+json'
+    return resp
+
+
+@app.route('/manifest-monitor.webmanifest')
+def manifest_monitor():
+    resp = make_response(send_from_directory(BASE_DIR, 'manifest-monitor.webmanifest'))
+    resp.headers['Content-Type'] = 'application/manifest+json'
+    return resp
+
+
+@app.route('/sw.js')
+def service_worker():
+    resp = make_response(send_from_directory(BASE_DIR, 'sw.js'))
+    resp.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+    resp.headers['Service-Worker-Allowed'] = '/'
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
+
+
+@app.route('/icon-192.png')
+def icon_pos_192():
+    resp = make_response(build_app_icon(192, 'pos'))
+    resp.headers['Content-Type'] = 'image/png'
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
+
+@app.route('/icon-512.png')
+def icon_pos_512():
+    resp = make_response(build_app_icon(512, 'pos'))
+    resp.headers['Content-Type'] = 'image/png'
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
+
+@app.route('/icon-monitor-192.png')
+def icon_mon_192():
+    resp = make_response(build_app_icon(192, 'monitor'))
+    resp.headers['Content-Type'] = 'image/png'
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
+
+@app.route('/icon-monitor-512.png')
+def icon_mon_512():
+    resp = make_response(build_app_icon(512, 'monitor'))
+    resp.headers['Content-Type'] = 'image/png'
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
+
 @app.route('/health')
 def health():
     cfg = load_config()
     ev = get_evento(cfg)
     lan_ip = get_lan_ip()
-    base = f'http://{lan_ip}:5000' if lan_ip else 'http://127.0.0.1:5000'
+    base = public_base(lan_ip)
     return jsonify({
         'status': 'ok',
         'printer': cfg.get('printer', ''),
@@ -607,6 +791,7 @@ def health():
         'evento': ev,
         'historico_ficheiro': ev['ficheiro'],
         'lan_ip': lan_ip or '',
+        'https': use_https(),
         'pos_url': base + '/',
         'monitor_url': base + '/monitor',
     })
@@ -1083,16 +1268,30 @@ if __name__ == '__main__':
 
     lan_ip = get_lan_ip()
     ev = get_evento()
+    ssl_ctx = None
+    want_https = bool(load_config().get('https', True))
+    if want_https:
+        ssl_ctx = ensure_ssl_cert()
+        HTTPS_ACTIVE = bool(ssl_ctx)
+        if not HTTPS_ACTIVE:
+            print('  [pwa] HTTPS indisponivel — a correr em HTTP (PWA no telemovel fica limitado)')
+    else:
+        HTTPS_ACTIVE = False
+
+    scheme = public_scheme()
     print('=' * 46)
     print(f'  HOME SUSHI POS — {ev["nome"]}')
     print(f'  {ev["detalhe"]}')
     print(f'  Histórico: {ev["ficheiro"]}')
-    print('  POS:     http://localhost:5000')
-    print('  Monitor: http://localhost:5000/monitor')
+    print(f'  POS:     {scheme}://localhost:5000')
+    print(f'  Monitor: {scheme}://localhost:5000/monitor')
     if lan_ip:
-        print(f'  Rede POS: http://{lan_ip}:5000/')
-        print(f'  Rede Mon: http://{lan_ip}:5000/monitor')
+        print(f'  Rede POS: {scheme}://{lan_ip}:5000/')
+        print(f'  Rede Mon: {scheme}://{lan_ip}:5000/monitor')
+    if HTTPS_ACTIVE:
+        print('  PWA:     abre o link no telemovel → Instalar / Adicionar ao ecra')
+        print('           (aceita o aviso do certificado uma vez)')
     bridge_on = bool((load_config().get('bridge') or {}).get('enabled'))
     print(f'  Bridge:  {"ligada" if bridge_on else "desligada"}')
     print('=' * 46)
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False, ssl_context=ssl_ctx)

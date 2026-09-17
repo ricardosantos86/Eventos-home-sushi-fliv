@@ -1,0 +1,39 @@
+{
+  "id": "/monitor?app=monitor",
+  "name": "Home Sushi Monitor",
+  "short_name": "Monitor",
+  "description": "Monitor de cozinha Home Sushi — fila de pedidos",
+  "start_url": "/monitor?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "lang": "pt-PT",
+  "icons": [
+    {
+      "src": "/icon-monitor-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-monitor-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-monitor-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-monitor-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

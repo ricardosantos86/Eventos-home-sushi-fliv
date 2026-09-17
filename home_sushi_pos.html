@@ -2,8 +2,16 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Home Sushi — ROCK&amp;DÃO · POS</title>
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="POS Caixa">
+<link rel="manifest" href="/manifest-pos.webmanifest">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1041,6 +1049,24 @@
     color: #fff;
     border-color: var(--red);
   }
+  .btn-install-pwa {
+    margin-left: 0;
+    background: rgba(196,18,48,0.2);
+    color: #fff;
+    border: 1px solid rgba(196,18,48,0.55);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    display: none;
+  }
+  .btn-install-pwa:hover { background: var(--accent); border-color: var(--accent); }
+  .btn-install-pwa.ready { display: inline-block; }
+  @media (max-width: 980px) {
+    .btn-install-pwa { display: inline-block; }
+  }
 </style>
 </head>
 <body>
@@ -1075,6 +1101,7 @@
       <span class="dot" id="bridge-dot"></span>
       PONTE
     </button>
+    <button type="button" class="btn-install-pwa" id="btn-install-pwa" onclick="installPwa()" title="Instalar app no telemóvel">INSTALAR APP</button>
     <button class="btn-sair" onclick="sairTudo()" title="Fechar POS, monitor e servidor">SAIR</button>
   </div>
 </header>
@@ -1505,11 +1532,11 @@ function buildTalao(lines, num, dateStr, timeStr, total, copia) {
 
 const SERVER = (location.protocol === 'http:' || location.protocol === 'https:')
   ? location.origin
-  : 'http://127.0.0.1:5000';
+  : 'https://127.0.0.1:5000';
 
 // Evita file:// — browsers bloqueiam fetch para o servidor local
 if (location.protocol === 'file:') {
-  location.replace('http://127.0.0.1:5000/');
+  location.replace('https://127.0.0.1:5000/');
 }
 
 let serverOnline = false;
@@ -1588,7 +1615,9 @@ document.getElementById('modal-evento').addEventListener('click', e => {
 async function checkServer() {
   const urls = [
     SERVER + '/health',
+    'https://127.0.0.1:5000/health',
     'http://127.0.0.1:5000/health',
+    'https://localhost:5000/health',
     'http://localhost:5000/health',
   ];
   const tried = new Set();
@@ -1606,9 +1635,11 @@ async function checkServer() {
         applyMonitorLink(d.monitor_url || '');
         applyPosLink(d.pos_url || '', d.lan_ip || '');
         // se ligámos via fallback, fixa o SERVER efetivo
-        if (url.startsWith('http://127.0.0.1')) window.__SERVER_BASE = 'http://127.0.0.1:5000';
-        else if (url.startsWith('http://localhost')) window.__SERVER_BASE = 'http://localhost:5000';
-        else window.__SERVER_BASE = SERVER;
+        try {
+          window.__SERVER_BASE = new URL(url).origin;
+        } catch {
+          window.__SERVER_BASE = SERVER;
+        }
         break;
       }
     } catch {
@@ -2254,6 +2285,36 @@ renderProducts();
 renderOrder();
 updateToggleLabel();
 renderCalendar();
+  </script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+let deferredPwaPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPwaPrompt = e;
+  const btn = document.getElementById('btn-install-pwa');
+  if (btn) btn.classList.add('ready');
+});
+window.addEventListener('appinstalled', () => {
+  deferredPwaPrompt = null;
+  const btn = document.getElementById('btn-install-pwa');
+  if (btn) btn.classList.remove('ready');
+});
+async function installPwa() {
+  if (!deferredPwaPrompt) {
+    alert('No iPhone/iPad: partilha → Adicionar ao ecrã inicial.\nNo Android: menu do browser → Instalar app / Adicionar ao ecrã inicial.');
+    return;
+  }
+  deferredPwaPrompt.prompt();
+  await deferredPwaPrompt.userChoice;
+  deferredPwaPrompt = null;
+  const btn = document.getElementById('btn-install-pwa');
+  if (btn) btn.classList.remove('ready');
+}
 </script>
 </body>
 </html>

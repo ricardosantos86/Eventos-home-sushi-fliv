@@ -2,8 +2,16 @@
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Home Sushi — ROCK&amp;DÃO · Monitor</title>
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Monitor">
+<link rel="manifest" href="/manifest-monitor.webmanifest">
+<link rel="apple-touch-icon" href="/icon-monitor-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-monitor-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -118,6 +126,23 @@
     background: var(--no);
     color: #fff;
     border-color: var(--no);
+  }
+  .btn-install-pwa {
+    background: rgba(196,18,48,0.2);
+    color: #fff;
+    border: 1px solid rgba(196,18,48,0.55);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    display: none;
+  }
+  .btn-install-pwa:hover { background: var(--accent); border-color: var(--accent); }
+  .btn-install-pwa.ready { display: inline-block; }
+  @media (max-width: 700px) {
+    .btn-install-pwa { display: inline-block; }
   }
 
   .btn-recuperar {
@@ -407,6 +432,7 @@
       <div class="server-dot" id="server-dot"></div>
       <span id="server-label">a ligar...</span>
     </div>
+    <button type="button" class="btn-install-pwa" id="btn-install-pwa" onclick="installPwa()" title="Instalar app no telemóvel">INSTALAR APP</button>
     <button class="btn-sair" onclick="sairTudo()" title="Fechar POS, monitor e servidor">SAIR</button>
   </div>
 </header>
@@ -418,10 +444,10 @@
 <script>
 const SERVER = (location.protocol === 'http:' || location.protocol === 'https:')
   ? location.origin
-  : 'http://127.0.0.1:5000';
+  : 'https://127.0.0.1:5000';
 
 if (location.protocol === 'file:') {
-  location.replace('http://127.0.0.1:5000/monitor');
+  location.replace('https://127.0.0.1:5000/monitor');
 }
 
 let busy = new Set();
@@ -558,7 +584,9 @@ function escapeHtml(s) {
 async function refresh() {
   const urls = [
     apiRoot + '/api/queue',
+    'https://127.0.0.1:5000/api/queue',
     'http://127.0.0.1:5000/api/queue',
+    'https://localhost:5000/api/queue',
     'http://localhost:5000/api/queue',
   ];
   const tried = new Set();
@@ -571,9 +599,11 @@ async function refresh() {
       const data = await r.json();
       setOnline(true);
       if (data.evento) applyEvento(data.evento);
-      if (url.startsWith('http://127.0.0.1')) apiRoot = 'http://127.0.0.1:5000';
-      else if (url.startsWith('http://localhost')) apiRoot = 'http://localhost:5000';
-      else apiRoot = SERVER;
+      try {
+        apiRoot = new URL(url).origin;
+      } catch {
+        apiRoot = SERVER;
+      }
       renderQueue(data.queue || []);
       renderCancelled(data.cancelled || []);
       return;
@@ -675,6 +705,36 @@ updateClock();
 setInterval(updateClock, 1000);
 refresh();
 setInterval(refresh, 1500);
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+let deferredPwaPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPwaPrompt = e;
+  const btn = document.getElementById('btn-install-pwa');
+  if (btn) btn.classList.add('ready');
+});
+window.addEventListener('appinstalled', () => {
+  deferredPwaPrompt = null;
+  const btn = document.getElementById('btn-install-pwa');
+  if (btn) btn.classList.remove('ready');
+});
+async function installPwa() {
+  if (!deferredPwaPrompt) {
+    alert('No iPhone/iPad: partilha → Adicionar ao ecrã inicial.\nNo Android: menu do browser → Instalar app / Adicionar ao ecrã inicial.');
+    return;
+  }
+  deferredPwaPrompt.prompt();
+  await deferredPwaPrompt.userChoice;
+  deferredPwaPrompt = null;
+  const btn = document.getElementById('btn-install-pwa');
+  if (btn) btn.classList.remove('ready');
+}
 </script>
 </body>
 </html>
