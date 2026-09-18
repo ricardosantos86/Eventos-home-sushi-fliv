@@ -245,7 +245,7 @@
 
   main {
     flex: 1;
-    padding: 14px 16px 20px;
+    padding: 17px 19px 23px;
     overflow-y: auto;
     width: 100%;
   }
@@ -257,21 +257,21 @@
     color: var(--text-dim);
   }
   .empty h2 {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 600;
     color: var(--text-muted);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
   .empty p {
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 14px;
   }
 
-  /* Cards com largura estável; mais colunas em janelas largas (sem esticar) */
+  /* Cards — base pensada para tablet / ecrã de cozinha */
   .queue {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(270px, 320px));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(321px, 378px));
+    gap: 15px;
     align-content: start;
     justify-content: start;
   }
@@ -279,12 +279,12 @@
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-top: 3px solid var(--accent);
-    border-radius: 8px;
-    padding: 10px 12px 12px;
+    border-top: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 15px 15px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     min-height: 0;
   }
 
@@ -292,17 +292,17 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
   }
   .card-num {
-    font-size: 22px;
+    font-size: 28px;
     font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1;
   }
   .card-meta {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 13px;
     color: var(--text-dim);
   }
 
@@ -312,49 +312,52 @@
   }
   .lines li {
     display: flex;
-    gap: 6px;
-    font-size: 13px;
+    gap: 7px;
+    font-size: 16px;
     font-weight: 600;
-    padding: 2px 0;
-    line-height: 1.25;
+    padding: 3px 0;
+    line-height: 1.3;
   }
   .lines .qty {
     font-family: var(--mono);
     color: var(--accent);
-    min-width: 28px;
+    min-width: 34px;
     flex-shrink: 0;
+    font-size: 16px;
   }
 
   .obs {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 14px;
     color: var(--text-muted);
     background: var(--surface2);
-    border-radius: 4px;
-    padding: 5px 7px;
+    border-radius: 6px;
+    padding: 7px 9px;
+    line-height: 1.35;
   }
   .obs strong { color: var(--text); }
 
   .pay {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 13px;
     color: var(--text-dim);
   }
 
   .actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 9px;
     margin-top: auto;
   }
   .btn {
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     font-family: var(--sans);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
-    padding: 10px 8px;
+    padding: 14px 9px;
+    min-height: 49px;
     color: #fff;
     transition: background 0.15s, opacity 0.15s, transform 0.1s;
   }
@@ -365,24 +368,37 @@
   .btn-no { background: var(--no); }
   .btn-no:hover:not(:disabled) { background: var(--no-hover); }
 
-  @media (min-width: 1400px) {
+  @media (min-width: 1100px) {
     .queue {
-      grid-template-columns: repeat(auto-fill, minmax(280px, 340px));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 397px));
+      gap: 17px;
     }
+    .card-num { font-size: 33px; }
+    .lines li, .lines .qty { font-size: 17px; }
   }
-  @media (min-width: 1800px) {
+  @media (min-width: 1600px) {
     .queue {
-      grid-template-columns: repeat(auto-fill, minmax(290px, 360px));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(359px, 416px));
+      gap: 19px;
     }
   }
   @media (max-width: 700px) {
     .queue {
       grid-template-columns: 1fr;
     }
+    .card {
+      padding: 13px 14px 14px;
+      gap: 10px;
+    }
+    .card-num { font-size: 25px; }
+    .lines li, .lines .qty { font-size: 15px; }
+    .btn {
+      font-size: 15px;
+      padding: 13px 8px;
+      min-height: 48px;
+    }
     header { padding: 10px 12px; }
-    main { padding: 10px; }
+    main { padding: 12px; }
   }
 </style>
 </head>
