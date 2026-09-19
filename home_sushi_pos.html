@@ -1230,6 +1230,7 @@ const PRODUCTS = [
   { id: 'crepes',     cat: 'Entrada', name: 'Crepes Vegetais', price: 5.00 },
   { id: 'hamburguer', cat: 'Prato',   name: 'Salmon Burguer', price: 10.00 },
   { id: 'sushi',      cat: 'Prato',   name: 'Sushi 8', price: 10.00 },
+  { id: 'chokoreto',  cat: 'Sobremesa', name: 'Mini Chokoreto', price: 4.00 },
 ];
 
 // Evento ROCK&DÃO: não pede pagamento (MBWAY/DINHEIRO ficam no código, mas não são usados)
@@ -1367,7 +1368,7 @@ function cancelEdit() {
 function renderProducts() {
   const cats = [];
   PRODUCTS.forEach(p => { if (!cats.includes(p.cat)) cats.push(p.cat); });
-  const labels = { Entrada: 'Entradas', Prato: 'Pratos' };
+  const labels = { Entrada: 'Entradas', Prato: 'Pratos', Sobremesa: 'Sobremesas' };
   document.getElementById('products-list').innerHTML = cats.map(cat => {
     const items = PRODUCTS.filter(p => p.cat === cat).map(p => `
       <div class="product-row ${qty[p.id] > 0 ? 'active' : ''}" id="row-${p.id}">
