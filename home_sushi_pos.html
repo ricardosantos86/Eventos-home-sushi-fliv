@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Home Sushi — ROCK&amp;DÃO · POS</title>
+<title>Home Sushi — FLIV · POS</title>
 <meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -105,36 +105,7 @@
     font-family: var(--mono);
     font-size: 12px;
     color: rgba(255,255,255,0.5);
-  }
-  .monitor-link {
-    margin-left: 16px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 6px;
-    padding: 5px 10px;
-    color: #fff;
-    text-decoration: none;
-    font-family: var(--mono);
-    font-size: 11px;
-    line-height: 1.25;
-    cursor: pointer;
-    max-width: 320px;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .monitor-link:hover { background: rgba(255,255,255,0.12); }
-  .monitor-link-lbl {
-    font-size: 9px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.45);
-  }
-  .monitor-link-url {
-    color: #93c5fd;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .server-status {
     display: flex;
@@ -143,7 +114,7 @@
     font-family: var(--mono);
     font-size: 11px;
     color: rgba(255,255,255,0.4);
-    margin-left: 20px;
+    margin-left: 8px;
   }
   .server-dot {
     width: 7px; height: 7px;
@@ -630,9 +601,52 @@
   .header-actions {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
   }
+
+  .net-footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 16px;
+    background: #1a1a1a;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .net-footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: 48%;
+    background: transparent;
+    border: none;
+    padding: 2px 0;
+    color: rgba(255,255,255,0.55);
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.2;
+    cursor: pointer;
+    text-align: left;
+  }
+  .net-footer-link:hover { color: #fff; }
+  .net-footer-lbl {
+    flex-shrink: 0;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+  .net-footer-url {
+    color: #93c5fd;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .net-footer-link:hover .net-footer-url { color: #bfdbfe; }
 
   /* RESPONSIVE — tablet / telemóvel */
   @media (max-width: 980px) {
@@ -654,13 +668,19 @@
     .logo-mark img { height: 30px; }
     .logo-event { font-size: 13px; }
     .logo-sub { display: none; }
-    .header-date,
-    #monitor-link,
-    #pos-link { display: none !important; }
+    .header-date { display: none !important; }
     .header-actions {
       margin-left: auto;
       max-width: 100%;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
+    .net-footer {
+      padding: 5px 12px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .net-footer-link { max-width: 100%; }
     .server-status { margin-left: 0; }
     .server-label {
       max-width: 110px;
@@ -903,7 +923,7 @@
   .bridge-status-box .err { color: var(--red); }
   .modal.wide { width: 440px; max-width: calc(100vw - 32px); }
   .btn-bridge {
-    margin-left: 10px;
+    margin-left: 0;
     background: transparent;
     color: rgba(255,255,255,0.55);
     border: 1px solid rgba(255,255,255,0.2);
@@ -916,6 +936,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    flex-shrink: 0;
+    white-space: nowrap;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
   .btn-bridge:hover { background: rgba(255,255,255,0.08); color: #fff; }
@@ -977,6 +999,40 @@
   }
   .btn-pay:hover { border-color: var(--accent); }
   .btn-pay.selected { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+  .menu-opt-group { margin-bottom: 16px; }
+  .menu-opt-group > label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .menu-opt-btns { display: flex; flex-direction: column; gap: 8px; }
+  .btn-menu-opt {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid var(--border2);
+    border-radius: 10px;
+    background: var(--surface2);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    color: var(--text);
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .btn-menu-opt:hover { border-color: var(--accent); }
+  .btn-menu-opt.selected { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+  .ol-detail {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 3px;
+    line-height: 1.35;
+    padding-left: 2px;
+  }
   .troco-block { margin-top: 4px; }
   .troco-input {
     width: 100%; padding: 10px 12px;
@@ -993,7 +1049,7 @@
   .hist-pay.mbway    { background: #dbeafe; color: #1d4ed8; }
   .hist-pay.dinheiro { background: #dcfce7; color: #15803d; }
   .hist-pay.evento,
-  .hist-pay.rockdao  { background: #fce7f3; color: #9d174d; }
+  .hist-pay.fliv     { background: #fce7f3; color: #9d174d; }
   .hist-status {
     font-family: var(--mono);
     font-size: 10px;
@@ -1178,7 +1234,7 @@
   }
 
   .btn-sair {
-    margin-left: 14px;
+    margin-left: 0;
     background: transparent;
     color: rgba(255,255,255,0.55);
     border: 1px solid rgba(255,255,255,0.2);
@@ -1188,12 +1244,73 @@
     font-size: 11px;
     letter-spacing: 0.06em;
     cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
   .btn-sair:hover {
     background: var(--red);
     color: #fff;
     border-color: var(--red);
+  }
+
+  .net-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: 4px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+    white-space: nowrap;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  }
+  .net-badge .net-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .net-badge.online {
+    background: #166534;
+    border-color: #22c55e;
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
+  }
+  .net-badge.online .net-dot {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    animation: net-pulse 1.6s ease-out infinite;
+  }
+  .net-badge.offline {
+    background: #991b1b;
+    border-color: #ef4444;
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4);
+  }
+  .net-badge.checking {
+    background: #374151;
+    border-color: #6b7280;
+    color: #e5e7eb;
+  }
+  @keyframes net-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  }
+  @media (max-width: 980px) {
+    .net-badge {
+      margin-left: 0;
+      padding: 7px 10px;
+      font-size: 11px;
+    }
   }
 </style>
 </head>
@@ -1207,27 +1324,23 @@
       <span class="logo-fallback" style="display:none;">HOME SUSHI</span>
     </div>
     <div style="margin-left:12px;" class="logo-event-wrap" onclick="openEventoModal()" title="Alterar nome do evento">
-      <div class="logo-event" id="logo-event">ROCK&amp;DÃO</div>
-      <div class="logo-sub" id="logo-sub">18 e 19 setembro 2026 · Viseu</div>
+      <div class="logo-event" id="logo-event">FLIV</div>
+      <div class="logo-sub" id="logo-sub">Festival Literário Internacional de Viseu</div>
     </div>
   </div>
   <div class="header-actions">
     <div class="header-date" id="header-date"></div>
-    <button type="button" class="monitor-link" id="monitor-link" onclick="copyMonitorLink()" title="Clica para copiar. Abre noutro telemóvel ou tablet na mesma Wi-Fi.">
-      <span class="monitor-link-lbl" id="monitor-link-lbl">Monitor (mesma rede)</span>
-      <span class="monitor-link-url" id="monitor-link-url">a ligar...</span>
-    </button>
     <div class="server-status" onclick="openPrinterModal()" title="Configurar impressora">
       <div class="server-dot" id="server-dot"></div>
       <span class="server-label" id="server-label">a ligar...</span>
     </div>
-    <button type="button" class="monitor-link" id="pos-link" onclick="copyPosLink()" title="Clica para copiar. Abre o caixa noutro PC ou tablet na mesma Wi-Fi.">
-      <span class="monitor-link-lbl" id="pos-link-lbl">POS (mesma rede)</span>
-      <span class="monitor-link-url" id="pos-link-url">a ligar...</span>
-    </button>
     <button class="btn-bridge" id="btn-bridge" onclick="openBridgeModal()" title="Observar monitor externo">
       <span class="dot" id="bridge-dot"></span>
       PONTE
+    </button>
+    <button type="button" class="net-badge checking" id="net-badge" onclick="checkInternet(true)" title="Estado da ligação à Internet — clica para verificar">
+      <span class="net-dot" aria-hidden="true"></span>
+      <span id="net-badge-label">…</span>
     </button>
     <button class="btn-sair" onclick="sairTudo()" title="Fechar POS, monitor e servidor">SAIR</button>
   </div>
@@ -1275,7 +1388,7 @@
 
   <!-- HISTÓRICO -->
   <div class="col-historico">
-    <div class="section-label" id="hist-section-label">Histórico · ROCK&amp;DÃO</div>
+    <div class="section-label" id="hist-section-label">Histórico · FLIV</div>
     <div class="hist-date-bar">
       <div class="hist-date-toggle" onclick="toggleCalendar()">
         <span class="hist-date-toggle-label" id="hist-date-toggle-label">—</span>
@@ -1291,7 +1404,44 @@
 
 </div>
 
+<footer class="net-footer" aria-label="Links da rede local">
+  <button type="button" class="net-footer-link" id="monitor-link" onclick="copyMonitorLink()" title="Clica para copiar. Abre noutro telemóvel ou tablet na mesma Wi-Fi.">
+    <span class="net-footer-lbl" id="monitor-link-lbl">Monitor</span>
+    <span class="net-footer-url" id="monitor-link-url">a ligar...</span>
+  </button>
+  <button type="button" class="net-footer-link" id="pos-link" onclick="copyPosLink()" title="Clica para copiar. Abre o caixa noutro PC ou tablet na mesma Wi-Fi.">
+    <span class="net-footer-lbl" id="pos-link-lbl">POS</span>
+    <span class="net-footer-url" id="pos-link-url">a ligar...</span>
+  </button>
+</footer>
+
 <div id="print-area"></div>
+
+<!-- Modal: Menu Literário -->
+<div class="modal-backdrop" id="modal-menu-literario">
+  <div class="modal">
+    <h2>Menu Literário · 12 €</h2>
+    <p class="modal-hint">Escolhe entrada e prato. Sai no papel e no monitor para a confecção.</p>
+    <div class="menu-opt-group">
+      <label>Entrada</label>
+      <div class="menu-opt-btns">
+        <button type="button" class="btn-menu-opt" data-group="entrada" data-value="2x Tempura de Camarão" onclick="selectMenuOpt('entrada', this)">2un Tempura de Camarão</button>
+        <button type="button" class="btn-menu-opt" data-group="entrada" data-value="2x Crocantes de Salmão" onclick="selectMenuOpt('entrada', this)">2un Crocantes de Salmão</button>
+      </div>
+    </div>
+    <div class="menu-opt-group">
+      <label>Prato</label>
+      <div class="menu-opt-btns">
+        <button type="button" class="btn-menu-opt" data-group="prato" data-value="Hambúrguer Salmão" onclick="selectMenuOpt('prato', this)">Hambúrguer Salmão</button>
+        <button type="button" class="btn-menu-opt" data-group="prato" data-value="Sushi 8" onclick="selectMenuOpt('prato', this)">Sushi 8</button>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:8px;">
+      <button class="btn-modal-cancel" onclick="closeMenuLiterarioModal()">Cancelar</button>
+      <button class="btn-modal-save" id="btn-menu-literario-confirm" onclick="confirmMenuLiterario()" disabled>Adicionar</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: forma de pagamento -->
 <div class="modal-backdrop" id="modal-payment">
@@ -1319,11 +1469,11 @@
     <h2>Nome do evento</h2>
     <p class="modal-hint">Aparece no POS e no monitor. Podes mudar quando quiseres.</p>
     <label>Nome</label>
-    <input type="text" id="evento-nome" placeholder="ROCK&amp;DÃO" maxlength="40">
+    <input type="text" id="evento-nome" placeholder="FLIV" maxlength="40">
     <label>Detalhe</label>
-    <input type="text" id="evento-detalhe" placeholder="18 e 19 setembro 2026 · Viseu" maxlength="60">
+    <input type="text" id="evento-detalhe" placeholder="Festival Literário Internacional de Viseu" maxlength="80">
     <label>Ficheiro do histórico</label>
-    <input type="text" id="evento-ficheiro" placeholder="historico_rock_dao.json" maxlength="80">
+    <input type="text" id="evento-ficheiro" placeholder="historico_fliv.json" maxlength="80">
     <p class="modal-hint">Se mudares o ficheiro, o sistema tenta renomear o JSON na pasta (mantém os pedidos).</p>
     <div class="modal-actions">
       <button class="btn-modal-cancel" onclick="closeEventoModal()">Cancelar</button>
@@ -1386,17 +1536,22 @@
 
 <script>
 const PRODUCTS = [
-  { id: 'ceviche',    cat: 'Entrada', name: 'Ceviche Home', price: 7.00 },
-  { id: 'tempura',    cat: 'Entrada', name: 'Tempura de Camarão Panko', price: 6.00 },
-  { id: 'crepes',     cat: 'Entrada', name: 'Crepes Vegetais', price: 5.00 },
-  { id: 'hamburguer', cat: 'Prato',   name: 'Salmon Burguer', price: 10.00 },
-  { id: 'sushi',      cat: 'Prato',   name: 'Sushi 8', price: 10.00 },
-  { id: 'chokoreto',  cat: 'Sobremesa', name: 'Mini Chokoreto', price: 4.00 },
+  { id: 'menu_literario', cat: 'Menu',      name: 'Menu Literário', price: 12.00 },
+  { id: 'tempura',        cat: 'Entrada',   name: 'Tempura de Camarão', price: 8.00 },
+  { id: 'ceviche',        cat: 'Entrada',   name: 'Ceviche Home', price: 6.00 },
+  { id: 'crocantes',      cat: 'Entrada',   name: 'Crocantes de Salmão', price: 5.00 },
+  { id: 'sushi',          cat: 'Prato',     name: 'Sushi & Sashimi 8', price: 8.00 },
+  { id: 'temaki',         cat: 'Prato',     name: 'Temaki', price: 7.00 },
+  { id: 'hamburguer',     cat: 'Prato',     name: 'Hambúrguer em Bolo Caco', price: 8.00 },
+  { id: 'chokoreto',      cat: 'Sobremesa', name: 'Chokoreto', price: 6.00 },
 ];
 
-// Evento ROCK&DÃO: não pede pagamento (MBWAY/DINHEIRO ficam no código, mas não são usados)
-const SKIP_PAYMENT = true;
-const DEFAULT_PAYMENT = 'ROCK&DÃO';
+const MENU_LITERARIO_ID = 'menu_literario';
+const MENU_LITERARIO_PRICE = 12.00;
+
+// Pedir MBWAY / DINHEIRO ao finalizar ou registar pedido
+const SKIP_PAYMENT = false;
+const DEFAULT_PAYMENT = 'MBWAY';
 
 let qty = {};
 let history = [];
@@ -1407,8 +1562,85 @@ let pendingAction = null;
 let calYear  = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let selectedCalDate = new Date().toLocaleDateString('pt-PT');
+/** @type {{ entrada: string, prato: string }[]} */
+let menuLiterarioCombos = [];
+let menuOptEntrada = null;
+let menuOptPrato = null;
 
 PRODUCTS.forEach(p => qty[p.id] = 0);
+
+function syncMenuLiterarioQty() {
+  qty[MENU_LITERARIO_ID] = menuLiterarioCombos.length;
+}
+
+/** Linhas enviadas ao servidor / impressão / monitor (com opções do menu). */
+function buildOrderLines() {
+  const lines = [];
+  PRODUCTS.forEach(p => {
+    if (p.id === MENU_LITERARIO_ID) {
+      menuLiterarioCombos.forEach(c => {
+        lines.push({ name: 'Menu Literário', qty: 1, price: MENU_LITERARIO_PRICE });
+        lines.push({ name: `→ Entrada: ${c.entrada}`, qty: 1, price: 0 });
+        lines.push({ name: `→ Prato: ${c.prato}`, qty: 1, price: 0 });
+      });
+      return;
+    }
+    if (qty[p.id] > 0) {
+      lines.push({ name: p.name, qty: qty[p.id], price: p.price });
+    }
+  });
+  return lines;
+}
+
+function orderTotalFromLines(lines) {
+  return lines.reduce((s, l) => s + (Number(l.price) || 0) * (Number(l.qty) || 0), 0);
+}
+
+function isMenuDetailLine(name) {
+  const n = String(name || '');
+  return n.startsWith('→ Entrada:') || n.startsWith('→ Prato:');
+}
+
+function openMenuLiterarioModal() {
+  menuOptEntrada = null;
+  menuOptPrato = null;
+  document.querySelectorAll('#modal-menu-literario .btn-menu-opt').forEach(b => b.classList.remove('selected'));
+  document.getElementById('btn-menu-literario-confirm').disabled = true;
+  document.getElementById('modal-menu-literario').classList.add('open');
+}
+
+function closeMenuLiterarioModal() {
+  document.getElementById('modal-menu-literario').classList.remove('open');
+  menuOptEntrada = null;
+  menuOptPrato = null;
+}
+
+function selectMenuOpt(group, btn) {
+  const value = btn.getAttribute('data-value');
+  document.querySelectorAll(`#modal-menu-literario .btn-menu-opt[data-group="${group}"]`)
+    .forEach(b => b.classList.toggle('selected', b === btn));
+  if (group === 'entrada') menuOptEntrada = value;
+  if (group === 'prato') menuOptPrato = value;
+  document.getElementById('btn-menu-literario-confirm').disabled = !(menuOptEntrada && menuOptPrato);
+}
+
+function confirmMenuLiterario() {
+  if (!menuOptEntrada || !menuOptPrato) return;
+  menuLiterarioCombos.push({ entrada: menuOptEntrada, prato: menuOptPrato });
+  syncMenuLiterarioQty();
+  closeMenuLiterarioModal();
+  renderProducts();
+  renderOrder();
+  setMobileTab('pedido');
+}
+
+function removeLastMenuLiterario() {
+  if (!menuLiterarioCombos.length) return;
+  menuLiterarioCombos.pop();
+  syncMenuLiterarioQty();
+  renderProducts();
+  renderOrder();
+}
 
 // Atualiza data/hora no header
 function updateClock() {
@@ -1566,7 +1798,10 @@ async function reprintOrder(index) {
         troco: o.troco || 0,
         lines: o.lines.map(l => {
           const p = PRODUCTS.find(p => p.name === l.name);
-          return { name: l.name, qty: l.qty, price: p ? p.price : 0 };
+          const price = l.price != null && l.price !== ''
+            ? Number(l.price)
+            : (p ? p.price : 0);
+          return { name: l.name, qty: l.qty, price: price || 0 };
         }),
       }),
     });
@@ -1602,15 +1837,36 @@ function loadOrderForEdit(index) {
   const o = history[index];
   if (!o) return;
 
-  // Limpa pedido atual e carrega itens do histórico
   PRODUCTS.forEach(p => qty[p.id] = 0);
-  o.lines.forEach(l => {
-    const product = PRODUCTS.find(p => p.name === l.name);
-    if (product) qty[product.id] = l.qty;
-  });
+  menuLiterarioCombos = [];
+  const lines = o.lines || [];
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    const name = String(l.name || '');
+    if (name === 'Menu Literário') {
+      let entrada = '';
+      let prato = '';
+      if (lines[i + 1] && String(lines[i + 1].name || '').startsWith('→ Entrada:')) {
+        entrada = String(lines[i + 1].name).replace(/^→ Entrada:\s*/, '');
+        i += 1;
+      }
+      if (lines[i + 1] && String(lines[i + 1].name || '').startsWith('→ Prato:')) {
+        prato = String(lines[i + 1].name).replace(/^→ Prato:\s*/, '');
+        i += 1;
+      }
+      menuLiterarioCombos.push({
+        entrada: entrada || '?',
+        prato: prato || '?',
+      });
+      continue;
+    }
+    if (isMenuDetailLine(name)) continue;
+    const product = PRODUCTS.find(p => p.name === name);
+    if (product) qty[product.id] = (qty[product.id] || 0) + (parseInt(l.qty, 10) || 0);
+  }
+  syncMenuLiterarioQty();
   document.getElementById('obs-input').value = o.obs || '';
 
-  // Activa modo de edição
   editingNum = o.num;
   const banner = document.getElementById('edit-banner');
   document.getElementById('edit-banner-text').textContent = `A editar pedido #${o.num}`;
@@ -1619,7 +1875,6 @@ function loadOrderForEdit(index) {
   renderProducts();
   renderOrder();
   setMobileTab('pedido');
-  // Scroll para o topo do painel
   document.querySelector('.col-pedido').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1632,7 +1887,7 @@ function cancelEdit() {
 function renderProducts() {
   const cats = [];
   PRODUCTS.forEach(p => { if (!cats.includes(p.cat)) cats.push(p.cat); });
-  const labels = { Entrada: 'Entradas', Prato: 'Pratos', Sobremesa: 'Sobremesas' };
+  const labels = { Menu: 'Menus', Entrada: 'Entradas', Prato: 'Pratos', Sobremesa: 'Sobremesas' };
   document.getElementById('products-list').innerHTML = cats.map(cat => {
     const items = PRODUCTS.filter(p => p.cat === cat).map(p => `
       <div class="product-row ${qty[p.id] > 0 ? 'active' : ''}" id="row-${p.id}">
@@ -1655,6 +1910,14 @@ function renderProducts() {
 }
 
 function changeQty(id, delta) {
+  if (id === MENU_LITERARIO_ID) {
+    if (delta > 0) {
+      openMenuLiterarioModal();
+      return;
+    }
+    if (delta < 0) removeLastMenuLiterario();
+    return;
+  }
   qty[id] = Math.max(0, qty[id] + delta);
   const numEl = document.getElementById('qty-' + id);
   if (numEl) numEl.textContent = qty[id];
@@ -1689,12 +1952,12 @@ function setMobileTab(tab) {
 }
 
 function renderOrder() {
-  const lines = PRODUCTS.filter(p => qty[p.id] > 0);
   const el  = document.getElementById('order-lines');
   const btn  = document.getElementById('btn-print');
   const btnF = document.getElementById('btn-finalize');
+  const hasItems = menuLiterarioCombos.length > 0 || PRODUCTS.some(p => p.id !== MENU_LITERARIO_ID && qty[p.id] > 0);
 
-  if (!lines.length) {
+  if (!hasItems) {
     el.innerHTML = '<div class="empty-msg">— vazio —</div>';
     document.getElementById('total-val').textContent = '0,00 €';
     if (btn) btn.disabled = true;
@@ -1703,11 +1966,21 @@ function renderOrder() {
     return;
   }
 
-  let total = 0;
-  el.innerHTML = lines.map(p => {
+  let html = '';
+  menuLiterarioCombos.forEach((c, idx) => {
+    html += `
+      <div class="order-line">
+        <div>
+          <div class="ol-qty">1×</div>
+          <div class="ol-name">Menu Literário${menuLiterarioCombos.length > 1 ? ' #' + (idx + 1) : ''}</div>
+          <div class="ol-detail">Entrada: ${c.entrada}<br>Prato: ${c.prato}</div>
+        </div>
+        <div class="ol-sub">${MENU_LITERARIO_PRICE.toFixed(2).replace('.', ',')} €</div>
+      </div>`;
+  });
+  PRODUCTS.filter(p => p.id !== MENU_LITERARIO_ID && qty[p.id] > 0).forEach(p => {
     const sub = p.price * qty[p.id];
-    total += sub;
-    return `
+    html += `
       <div class="order-line">
         <div>
           <div class="ol-qty">${qty[p.id]}×</div>
@@ -1715,8 +1988,10 @@ function renderOrder() {
         </div>
         <div class="ol-sub">${sub.toFixed(2).replace('.', ',')} €</div>
       </div>`;
-  }).join('');
+  });
 
+  const total = orderTotalFromLines(buildOrderLines());
+  el.innerHTML = html;
   document.getElementById('total-val').textContent = total.toFixed(2).replace('.', ',') + ' €';
   if (btn) {
     btn.disabled = false;
@@ -1788,15 +2063,15 @@ if (location.protocol === 'file:') {
 let serverOnline = false;
 let configuredPrinter = '';
 let currentEvento = {
-  nome: 'ROCK&DÃO',
-  detalhe: '18 e 19 setembro 2026 · Viseu',
-  ficheiro: 'historico_rock_dao.json',
+  nome: 'FLIV',
+  detalhe: 'Festival Literário Internacional de Viseu',
+  ficheiro: 'historico_fliv.json',
 };
 
 function applyEvento(ev) {
   if (!ev) return;
   currentEvento = {
-    nome: ev.nome || 'ROCK&DÃO',
+    nome: ev.nome || 'FLIV',
     detalhe: ev.detalhe || '',
     ficheiro: ev.ficheiro || currentEvento.ficheiro,
   };
@@ -1857,6 +2132,52 @@ async function saveEvento() {
 document.getElementById('modal-evento').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeEventoModal();
 });
+
+document.getElementById('modal-menu-literario').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeMenuLiterarioModal();
+});
+
+function setNetBadge(state) {
+  const badge = document.getElementById('net-badge');
+  const label = document.getElementById('net-badge-label');
+  if (!badge || !label) return;
+  badge.classList.remove('online', 'offline', 'checking');
+  if (state === 'checking') {
+    badge.classList.add('checking');
+    label.textContent = '…';
+    return;
+  }
+  if (state) {
+    badge.classList.add('online');
+    label.textContent = 'ONLINE';
+    badge.title = 'Internet OK — clica para verificar de novo';
+  } else {
+    badge.classList.add('offline');
+    label.textContent = 'OFFLINE';
+    badge.title = 'Sem Internet — clica para verificar de novo';
+  }
+}
+
+async function checkInternet(showChecking) {
+  if (showChecking) setNetBadge('checking');
+  if (!navigator.onLine) {
+    setNetBadge(false);
+    return;
+  }
+  try {
+    await fetch('https://www.gstatic.com/generate_204?t=' + Date.now(), {
+      mode: 'no-cors',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(3500),
+    });
+    setNetBadge(true);
+  } catch {
+    setNetBadge(false);
+  }
+}
+
+window.addEventListener('online', () => checkInternet());
+window.addEventListener('offline', () => setNetBadge(false));
 
 async function checkServer() {
   const urls = [
@@ -2008,6 +2329,8 @@ async function loadHistory() {
 
 checkServer().then(() => { loadHistory(); refreshBridgeStatus(); });
 setInterval(checkServer, 10000);
+checkInternet();
+setInterval(checkInternet, 15000);
 
 // ── Modal impressora ────────────────────────────────────────────────────────
 async function openPrinterModal() {
@@ -2149,9 +2472,7 @@ setInterval(refreshBridgeStatus, 5000);
 // ── Modal pagamento ──────────────────────────────────────────────────────────
 
 function getCurrentTotal() {
-  let total = 0;
-  PRODUCTS.filter(p => qty[p.id] > 0).forEach(p => total += p.price * qty[p.id]);
-  return total;
+  return orderTotalFromLines(buildOrderLines());
 }
 
 function openPaymentModal(action) {
@@ -2228,11 +2549,14 @@ document.getElementById('modal-payment').addEventListener('click', e => {
 
 // ── Ações de pedido ──────────────────────────────────────────────────────────
 
+function hasOrderItems() {
+  return menuLiterarioCombos.length > 0 || PRODUCTS.some(p => p.id !== MENU_LITERARIO_ID && qty[p.id] > 0);
+}
+
 async function finalizeOrder() {
-  if (!PRODUCTS.filter(p => qty[p.id] > 0).length) return;
+  if (!hasOrderItems()) return;
   await checkServer();
   if (!serverOnline) { alert('Servidor offline. Inicia o iniciar.bat primeiro.\nAbre depois http://127.0.0.1:5000/'); return; }
-  // Evento ROCK&DÃO: sem cobrança — não pede MBWAY/DINHEIRO
   if (SKIP_PAYMENT) {
     await doFinalize({ metodo: DEFAULT_PAYMENT, valorEntregue: 0, troco: 0 });
     return;
@@ -2241,7 +2565,7 @@ async function finalizeOrder() {
 }
 
 async function registerOrder() {
-  if (!PRODUCTS.filter(p => qty[p.id] > 0).length) return;
+  if (!hasOrderItems()) return;
   await checkServer();
   if (!serverOnline) { alert('Servidor offline. Inicia o iniciar.bat primeiro.\nAbre depois http://127.0.0.1:5000/'); return; }
   if (SKIP_PAYMENT) {
@@ -2252,12 +2576,11 @@ async function registerOrder() {
 }
 
 async function doFinalize(pagamento) {
-  const lines = PRODUCTS.filter(p => qty[p.id] > 0);
+  const lines = buildOrderLines();
   const now     = new Date();
   const dateStr = now.toLocaleDateString('pt-PT');
   const timeStr = now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-  let total = 0;
-  lines.forEach(p => total += p.price * qty[p.id]);
+  const total = orderTotalFromLines(lines);
   const obs = document.getElementById('obs-input').value.trim();
 
   const btnF = document.getElementById('btn-finalize');
@@ -2266,7 +2589,6 @@ async function doFinalize(pagamento) {
 
   try {
     if (!configuredPrinter) {
-      // tenta atualizar estado da impressora antes de enviar
       await checkServer();
     }
     const r = await fetch(apiBase() + '/api/finalize', {
@@ -2280,7 +2602,7 @@ async function doFinalize(pagamento) {
         pagamento: pagamento.metodo,
         valor_entregue: pagamento.valorEntregue,
         troco: pagamento.troco,
-        lines: lines.map(p => ({ name: p.name, qty: qty[p.id], price: p.price })),
+        lines,
       }),
     });
     const data = await r.json();
@@ -2297,7 +2619,7 @@ async function doFinalize(pagamento) {
     if (!editingNum) orderCounter = parseInt(num) + 1;
     const entry = {
       num, date: dateStr, time: timeStr,
-      lines: lines.map(p => ({ name: p.name, qty: qty[p.id] })),
+      lines: lines.map(l => ({ name: l.name, qty: l.qty, price: l.price })),
       total: total.toFixed(2),
       pagamento: pagamento.metodo,
       valorEntregue: pagamento.valorEntregue,
@@ -2320,14 +2642,13 @@ async function doFinalize(pagamento) {
 }
 
 async function doRegister(pagamento) {
-  const lines = PRODUCTS.filter(p => qty[p.id] > 0);
+  const lines = buildOrderLines();
   const btn = document.getElementById('btn-print');
 
   const now     = new Date();
   const dateStr = now.toLocaleDateString('pt-PT');
   const timeStr = now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
-  let total = 0;
-  lines.forEach(p => total += p.price * qty[p.id]);
+  const total = orderTotalFromLines(lines);
 
   btn.disabled    = true;
   btn.textContent = 'A registar...';
@@ -2346,7 +2667,7 @@ async function doRegister(pagamento) {
         pagamento: pagamento.metodo,
         valor_entregue: pagamento.valorEntregue,
         troco: pagamento.troco,
-        lines: lines.map(p => ({ name: p.name, qty: qty[p.id], price: p.price })),
+        lines,
       }),
     });
     const data = await r.json();
@@ -2356,7 +2677,7 @@ async function doRegister(pagamento) {
     if (!editingNum) orderCounter = parseInt(num) + 1;
     const entry = {
       num, date: dateStr, time: timeStr,
-      lines: lines.map(p => ({ name: p.name, qty: qty[p.id] })),
+      lines: lines.map(l => ({ name: l.name, qty: l.qty, price: l.price })),
       total: total.toFixed(2),
       pagamento: pagamento.metodo,
       valorEntregue: pagamento.valorEntregue,
@@ -2380,6 +2701,7 @@ async function doRegister(pagamento) {
 
 function clearOrder() {
   PRODUCTS.forEach(p => qty[p.id] = 0);
+  menuLiterarioCombos = [];
   document.getElementById('obs-input').value = '';
   editingNum = null;
   document.getElementById('edit-banner').classList.remove('visible');

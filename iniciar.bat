@@ -50,7 +50,7 @@ set "CHROME86=%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"
 set "EDGE=%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"
 set "EDGE64=%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"
 set "POS_URL=http://127.0.0.1:5000/"
-set "MON_URL=http://127.0.0.1:5000/monitor?v=rd2"
+set "MON_URL=http://127.0.0.1:5000/monitor?v=fliv1"
 
 if exist "%CHROME%" (
     start "HOME SUSHI POS" /MAX "%CHROME%" --new-window --start-maximized --app="%POS_URL%"
@@ -73,7 +73,7 @@ if exist "%CHROME%" (
 timeout /t 2 /nobreak >nul
 powershell -NoProfile -Command ^
   "Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;public class W{[DllImport(\"user32.dll\")]public static extern bool ShowWindowAsync(IntPtr h,int c);}'; ^
-  "Get-Process chrome,msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 -and ($_.MainWindowTitle -match 'Home Sushi|ROCK|Monitor') } | ForEach-Object { [void][W]::ShowWindowAsync($_.MainWindowHandle,3) }"
+  "Get-Process chrome,msedge -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 -and ($_.MainWindowTitle -match 'Home Sushi|FLIV|Monitor') } | ForEach-Object { [void][W]::ShowWindowAsync($_.MainWindowHandle,3) }"
 
 echo.
 echo  POS:     http://127.0.0.1:5000

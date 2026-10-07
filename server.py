@@ -29,9 +29,9 @@ ICON_CACHE   = {}
 HTTPS_ACTIVE = False
 
 DEFAULT_EVENTO = {
-    'nome': 'ROCK&DÃO',
-    'detalhe': '18 e 19 setembro 2026 · Viseu',
-    'ficheiro': 'historico_rock_dao.json',
+    'nome': 'FLIV',
+    'detalhe': 'Festival Literário Internacional de Viseu',
+    'ficheiro': 'historico_fliv.json',
 }
 
 try:

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Home Sushi — ROCK&amp;DÃO · Monitor</title>
+<title>Home Sushi — FLIV · Monitor</title>
 <meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -126,6 +126,54 @@
     background: var(--no);
     color: #fff;
     border-color: var(--no);
+  }
+
+  .net-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  }
+  .net-badge .net-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .net-badge.online {
+    background: #166534;
+    border-color: #22c55e;
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
+  }
+  .net-badge.online .net-dot {
+    animation: net-pulse 1.6s ease-out infinite;
+  }
+  .net-badge.offline {
+    background: #991b1b;
+    border-color: #ef4444;
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4);
+  }
+  .net-badge.checking {
+    background: #374151;
+    border-color: #6b7280;
+    color: #e5e7eb;
+  }
+  @keyframes net-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
   }
 
   .btn-recuperar {
@@ -411,8 +459,8 @@
            onerror="this.style.display='none'">
     </div>
     <div>
-      <div class="title" id="logo-event">ROCK&amp;DÃO · Monitor</div>
-      <div class="subtitle" id="logo-sub">18 e 19 setembro 2026 · Viseu</div>
+      <div class="title" id="logo-event">FLIV · Monitor</div>
+      <div class="subtitle" id="logo-sub">Festival Literário Internacional de Viseu</div>
     </div>
   </div>
   <div class="header-meta">
@@ -431,6 +479,10 @@
       <div class="server-dot" id="server-dot"></div>
       <span id="server-label">a ligar...</span>
     </div>
+    <button type="button" class="net-badge checking" id="net-badge" onclick="checkInternet(true)" title="Estado da ligação à Internet — clica para verificar">
+      <span class="net-dot" aria-hidden="true"></span>
+      <span id="net-badge-label">…</span>
+    </button>
     <button class="btn-sair" onclick="sairTudo()" title="Fechar POS, monitor e servidor">SAIR</button>
   </div>
 </header>
@@ -466,7 +518,7 @@ function money(v) {
 
 function applyEvento(ev) {
   if (!ev) return;
-  const nome = ev.nome || 'ROCK&DÃO';
+  const nome = ev.nome || 'FLIV';
   const detalhe = ev.detalhe || '';
   const elNome = document.getElementById('logo-event');
   const elSub = document.getElementById('logo-sub');
@@ -699,10 +751,54 @@ async function sairTudo() {
   setTimeout(() => { try { window.close(); } catch {} }, 300);
 }
 
+function setNetBadge(state) {
+  const badge = document.getElementById('net-badge');
+  const label = document.getElementById('net-badge-label');
+  if (!badge || !label) return;
+  badge.classList.remove('online', 'offline', 'checking');
+  if (state === 'checking') {
+    badge.classList.add('checking');
+    label.textContent = '…';
+    return;
+  }
+  if (state) {
+    badge.classList.add('online');
+    label.textContent = 'ONLINE';
+    badge.title = 'Internet OK — clica para verificar de novo';
+  } else {
+    badge.classList.add('offline');
+    label.textContent = 'OFFLINE';
+    badge.title = 'Sem Internet — clica para verificar de novo';
+  }
+}
+
+async function checkInternet(showChecking) {
+  if (showChecking) setNetBadge('checking');
+  if (!navigator.onLine) {
+    setNetBadge(false);
+    return;
+  }
+  try {
+    await fetch('https://www.gstatic.com/generate_204?t=' + Date.now(), {
+      mode: 'no-cors',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(3500),
+    });
+    setNetBadge(true);
+  } catch {
+    setNetBadge(false);
+  }
+}
+
+window.addEventListener('online', () => checkInternet());
+window.addEventListener('offline', () => setNetBadge(false));
+
 updateClock();
 setInterval(updateClock, 1000);
 refresh();
 setInterval(refresh, 1500);
+checkInternet();
+setInterval(checkInternet, 15000);
 </script>
 <script>
 if ('serviceWorker' in navigator) {

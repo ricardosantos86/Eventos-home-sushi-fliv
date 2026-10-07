@@ -206,7 +206,7 @@ def import_orders(orders: list[dict], ingest_fn: Callable[[dict], dict], source:
             skipped += 1
             continue
 
-        order.setdefault('pagamento', 'ROCK&DÃO')
+        order.setdefault('pagamento', 'FLIV')
         order.setdefault('valor_entregue', 0)
         order.setdefault('troco', 0)
         order['status'] = 'pendente'
