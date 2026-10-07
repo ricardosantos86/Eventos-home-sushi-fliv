@@ -551,9 +551,14 @@ function renderQueue(orders) {
       </div>`;
   } else {
     el.innerHTML = orders.map(o => {
-      const lines = (o.lines || []).map(l => `
-        <li><span class="qty">${l.qty}x</span><span>${l.name}</span></li>
-      `).join('');
+      const lines = (o.lines || []).map(l => {
+        const name = String(l.name || '');
+        const isDetail = /^(→\s*)?(Entrada|Prato):/.test(name);
+        const qtyHtml = isDetail
+          ? '<span class="qty"></span>'
+          : `<span class="qty">${escapeHtml(String(l.qty))}x</span>`;
+        return `<li>${qtyHtml}<span>${escapeHtml(name)}</span></li>`;
+      }).join('');
       const obs = String(o.obs ?? '').trim()
         ? `<div class="obs"><strong>OBS:</strong> ${escapeHtml(o.obs)}</div>`
         : '';
@@ -594,7 +599,11 @@ function renderCancelled(orders) {
 
   list.innerHTML = orders.map(o => {
     const st = ({ impresso: 'concluído', removido: 'removido', rejeitado: 'removido' })[o.status] || (o.status || '');
-    const items = (o.lines || []).map(l => `${l.qty}x ${l.name}`).join(', ');
+    const items = (o.lines || []).map(l => {
+      const name = String(l.name || '');
+      if (/^(→\s*)?(Entrada|Prato):/.test(name)) return name;
+      return `${l.qty}x ${name}`;
+    }).join(', ');
     const disabled = busy.has(String(o.num)) ? 'disabled' : '';
     return `
       <div class="cancelled-row">

@@ -1580,8 +1580,8 @@ function buildOrderLines() {
     if (p.id === MENU_LITERARIO_ID) {
       menuLiterarioCombos.forEach(c => {
         lines.push({ name: 'Menu Literário', qty: 1, price: MENU_LITERARIO_PRICE });
-        lines.push({ name: `→ Entrada: ${c.entrada}`, qty: 1, price: 0 });
-        lines.push({ name: `→ Prato: ${c.prato}`, qty: 1, price: 0 });
+        lines.push({ name: `Entrada: ${c.entrada}`, qty: 1, price: 0 });
+        lines.push({ name: `Prato: ${c.prato}`, qty: 1, price: 0 });
       });
       return;
     }
@@ -1598,7 +1598,7 @@ function orderTotalFromLines(lines) {
 
 function isMenuDetailLine(name) {
   const n = String(name || '');
-  return n.startsWith('→ Entrada:') || n.startsWith('→ Prato:');
+  return /^(→\s*)?(Entrada|Prato):/.test(n);
 }
 
 function openMenuLiterarioModal() {
@@ -1712,7 +1712,9 @@ function renderFechoHtml(r) {
     return `<div class="fecho-row"><span>${escapeFecho(pay)} (${d.count})</span><span>${moneyPt(d.total)}</span></div>`;
   }).join('');
 
-  const itemEntries = Object.entries(r.byItem).sort((a, b) => b[1].qty - a[1].qty);
+  const itemEntries = Object.entries(r.byItem)
+    .filter(([name]) => !/^(→\s*)?(Entrada|Prato):/.test(String(name || '')))
+    .sort((a, b) => b[1].qty - a[1].qty);
   const itemRows = itemEntries.map(([name, d]) =>
     `<div class="fecho-row"><span>${d.qty}× ${escapeFecho(name)}</span><span>${moneyPt(d.total)}</span></div>`
   ).join('');
@@ -1846,12 +1848,12 @@ function loadOrderForEdit(index) {
     if (name === 'Menu Literário') {
       let entrada = '';
       let prato = '';
-      if (lines[i + 1] && String(lines[i + 1].name || '').startsWith('→ Entrada:')) {
-        entrada = String(lines[i + 1].name).replace(/^→ Entrada:\s*/, '');
+      if (lines[i + 1] && /^(→\s*)?Entrada:/.test(String(lines[i + 1].name || ''))) {
+        entrada = String(lines[i + 1].name).replace(/^(→\s*)?Entrada:\s*/, '');
         i += 1;
       }
-      if (lines[i + 1] && String(lines[i + 1].name || '').startsWith('→ Prato:')) {
-        prato = String(lines[i + 1].name).replace(/^→ Prato:\s*/, '');
+      if (lines[i + 1] && /^(→\s*)?Prato:/.test(String(lines[i + 1].name || ''))) {
+        prato = String(lines[i + 1].name).replace(/^(→\s*)?Prato:\s*/, '');
         i += 1;
       }
       menuLiterarioCombos.push({
@@ -2837,7 +2839,11 @@ function renderHistory() {
           <span class="hist-total">${totalStr} €</span>
         </div>
         <div class="hist-body">
-          ${o.lines.map(l => `<div class="hist-item">${l.qty}× ${l.name}</div>`).join('')}
+          ${o.lines.map(l => {
+            const name = String(l.name || '');
+            const isDetail = /^(→\s*)?(Entrada|Prato):/.test(name);
+            return `<div class="hist-item">${isDetail ? '' : `${l.qty}× `}${name}</div>`;
+          }).join('')}
           ${trocoLine}
           <div style="margin-top:8px; display:flex; gap:6px;">
             <button class="btn-edit" onclick="loadOrderForEdit(${i})">Editar</button>

@@ -226,6 +226,87 @@ def _obs_lines(buf, obs):
         buf += esc_line(line)
     return buf
 
+
+def _wrap_text(text, width):
+    """Parte texto em linhas <= width (palavra a palavra; corta palavras longas)."""
+    width = max(1, int(width))
+    text = str(text or '')
+    if not text:
+        return ['']
+    words = text.split()
+    lines = []
+    current = ''
+    for word in words:
+        while len(word) > width:
+            piece, word = word[:width], word[width:]
+            if current:
+                lines.append(current)
+                current = ''
+            lines.append(piece)
+        if not word:
+            continue
+        if not current:
+            current = word
+        elif len(current) + 1 + len(word) <= width:
+            current = f'{current} {word}'
+        else:
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines or ['']
+
+
+def _is_menu_detail_line(name):
+    """Linhas Entrada/Prato do Menu Literário — sem quantidade no papel."""
+    n = str(name or '').lstrip()
+    if n.startswith('→'):
+        n = n[1:].lstrip()
+    return n.startswith('Entrada:') or n.startswith('Prato:')
+
+
+def _item_qty_label(item):
+    """Qty no papel; vazio para sub-linhas do menu (já implícitas no Menu Literário)."""
+    name = item.get('name', '') if isinstance(item, dict) else ''
+    if _is_menu_detail_line(name):
+        return ''
+    qty = item.get('qty', 0) if isinstance(item, dict) else item
+    try:
+        q = int(qty or 0)
+    except (TypeError, ValueError):
+        q = 0
+    return f'{q}x' if q else ''
+
+
+def _append_item_name(buf, qty_s, name, col_qty, col_name, sub=None, col_sub=None):
+    """Escreve item com nome a mudar de linha se não couber na largura do papel."""
+    chunks = _wrap_text(name, col_name)
+    for i, chunk in enumerate(chunks):
+        q = qty_s if i == 0 else ''
+        if sub is not None and col_sub is not None:
+            s = sub if i == 0 else ''
+            buf += esc_line(f"{q:<{col_qty}}  {chunk:<{col_name}}{s:>{col_sub}}")
+        else:
+            buf += esc_line(f"{q:<{col_qty}}  {chunk}")
+    return buf
+
+
+def _append_order_item(buf, item, col_qty, col_name, with_price=False, col_sub=None):
+    """Item de pedido; sub-linhas do menu sem qty nem preço."""
+    name = item.get('name', '')
+    if _is_menu_detail_line(name):
+        # Sem preço — usa quase toda a largura para o texto
+        return _append_item_name(buf, '', name, col_qty, W - col_qty - 2)
+    qty_s = _item_qty_label(item)
+    if with_price:
+        price = float(item.get('price', 0) or 0)
+        qty = int(item.get('qty', 0) or 0)
+        sub = f"{price * qty:.2f}".replace('.', ',') + '€'
+        return _append_item_name(
+            buf, qty_s, name, col_qty, col_name, sub=sub, col_sub=col_sub
+        )
+    return _append_item_name(buf, qty_s, name, col_qty, col_name)
+
 def build_escpos_estabelecimento(order):
     """Cópia interna — só número, itens e observações."""
     buf = bytearray()
@@ -248,9 +329,7 @@ def build_escpos_estabelecimento(order):
     COL_QTY  = 4
     COL_NAME = W - COL_QTY - 2
     for item in order['lines']:
-        qty_s = f"{item['qty']}x"
-        name  = item['name'][:COL_NAME]
-        buf += esc_line(f"{qty_s:<{COL_QTY}}  {name}")
+        buf = _append_order_item(buf, item, COL_QTY, COL_NAME, with_price=False)
 
     buf += divider()
 
@@ -321,10 +400,9 @@ def build_escpos_cliente(order):
     buf += esc_line(f"{'Qtd':<{COL_QTY}}  {'Item':<{COL_NAME}}{'Sub':>{COL_SUB}}")
     buf += divider()
     for item in order['lines']:
-        qty_s = f"{item['qty']}x"
-        name  = item['name'][:COL_NAME]
-        sub   = f"{item['price'] * item['qty']:.2f}".replace('.', ',') + '€'
-        buf += esc_line(f"{qty_s:<{COL_QTY}}  {name:<{COL_NAME}}{sub:>{COL_SUB}}")
+        buf = _append_order_item(
+            buf, item, COL_QTY, COL_NAME, with_price=True, col_sub=COL_SUB
+        )
     buf += divider()
 
     # ── Observações ──
@@ -445,10 +523,13 @@ def build_escpos_daily_report(date_str, orders):
         COL_NAME = W - COL_QTY - COL_SUB - 2
         total_qty = 0
         for name, data in sorted(by_item.items(), key=lambda kv: -kv[1]['qty']):
+            if _is_menu_detail_line(name):
+                continue  # só conta no Menu Literário
             qty_s = f"{data['qty']}x"
             sub   = f"{data['total']:.2f}".replace('.', ',') + '€'
-            n     = name[:COL_NAME]
-            buf += esc_line(f"{qty_s:<{COL_QTY}}  {n:<{COL_NAME}}{sub:>{COL_SUB}}")
+            buf = _append_item_name(
+                buf, qty_s, name, COL_QTY, COL_NAME, sub=sub, col_sub=COL_SUB
+            )
             total_qty += data['qty']
         buf += divider()
         buf += esc_line(f"{'Total artigos:':<20}{total_qty:>{W - 20}}")
@@ -496,18 +577,13 @@ def build_escpos_controlo(order, titulo='CONTROLO', rodape='CONCLUIDO', simples=
     if not simples:
         COL_NAME = W - COL_QTY - COL_SUB - 2
         for item in order.get('lines', []):
-            qty_s = f"{int(item.get('qty', 0) or 0)}x"
-            name  = str(item.get('name', ''))[:COL_NAME]
-            price = float(item.get('price', 0) or 0)
-            qty   = int(item.get('qty', 0) or 0)
-            sub   = f"{price * qty:.2f}".replace('.', ',') + '€'
-            buf += esc_line(f"{qty_s:<{COL_QTY}}  {name:<{COL_NAME}}{sub:>{COL_SUB}}")
+            buf = _append_order_item(
+                buf, item, COL_QTY, COL_NAME, with_price=True, col_sub=COL_SUB
+            )
     else:
         COL_NAME = W - COL_QTY - 2
         for item in order.get('lines', []):
-            qty_s = f"{int(item.get('qty', 0) or 0)}x"
-            name  = str(item.get('name', ''))[:COL_NAME]
-            buf += esc_line(f"{qty_s:<{COL_QTY}}  {name}")
+            buf = _append_order_item(buf, item, COL_QTY, COL_NAME, with_price=False)
 
     buf += divider()
 
