@@ -1544,6 +1544,9 @@ const PRODUCTS = [
   { id: 'temaki',         cat: 'Prato',     name: 'Temaki', price: 7.00 },
   { id: 'hamburguer',     cat: 'Prato',     name: 'Hambúrguer em Bolo Caco', price: 8.00 },
   { id: 'chokoreto',      cat: 'Sobremesa', name: 'Chokoreto', price: 6.00 },
+  { id: 'stella',         cat: 'Bebida',    name: 'Cerveja Stella Artois', price: 2.50 },
+  { id: 'vinho_copo',     cat: 'Bebida',    name: 'Vinho a copo', price: 3.00 },
+  { id: 'cafe',           cat: 'Bebida',    name: 'Café', price: 1.00 },
 ];
 
 const MENU_LITERARIO_ID = 'menu_literario';
@@ -1889,7 +1892,7 @@ function cancelEdit() {
 function renderProducts() {
   const cats = [];
   PRODUCTS.forEach(p => { if (!cats.includes(p.cat)) cats.push(p.cat); });
-  const labels = { Menu: 'Menus', Entrada: 'Entradas', Prato: 'Pratos', Sobremesa: 'Sobremesas' };
+  const labels = { Menu: 'Menus', Entrada: 'Entradas', Prato: 'Pratos', Sobremesa: 'Sobremesas', Bebida: 'Bebidas' };
   document.getElementById('products-list').innerHTML = cats.map(cat => {
     const items = PRODUCTS.filter(p => p.cat === cat).map(p => `
       <div class="product-row ${qty[p.id] > 0 ? 'active' : ''}" id="row-${p.id}">
